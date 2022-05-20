@@ -1,6 +1,7 @@
 __all__ = [
     "make_list",
-    "exist"
+    "exist",
+    "JsonSerializable"
 ]
 
 from .typing import *
@@ -19,3 +20,8 @@ def exist(_list: Iterable, _f: filter_of(Any)):
         if _f(val):
             return True
     return False
+
+
+class JsonSerializable:
+    pass
+

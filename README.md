@@ -1,6 +1,8 @@
 # luogu-api-python
 a python implement of luogu API
 
+upstream docs: [https://github.com/sjx233/luogu-api-docs](https://github.com/sjx233/luogu-api-docs)
+
 ## Get Start
 
 You can get it by run following command in shell:
