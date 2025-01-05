@@ -291,13 +291,13 @@ class LuoguCookies(LuoguType):
         "_uid": str,
     }
 
-    def __init__(self, __client_id: str, _uid: str, C3VK: str):
+    def __init__(self, __client_id: str, _uid: str):
         self.__setattr__( "__client_id", __client_id )
         self._uid = _uid
 
     @staticmethod
     def from_file(path: str):
-        ret = LuoguCookies("", "", "")
+        ret = LuoguCookies("", "")
 
         with open(path, 'r') as json_file:
             data = json.load(json_file)

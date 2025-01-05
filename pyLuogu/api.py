@@ -64,4 +64,4 @@ class luoguAPI:
     ) -> ProblemSettings:
         res = self._send_request(endpoint=f"problem/edit/{pid}")
 
-        return res
+        return ProblemSettings(res["setting"])
