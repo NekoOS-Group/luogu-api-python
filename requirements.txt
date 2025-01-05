@@ -1,1 +1,2 @@
-setuptools~=44.1.1
+setuptools
+requests

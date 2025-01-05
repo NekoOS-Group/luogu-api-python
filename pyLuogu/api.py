@@ -1,257 +1,67 @@
 from .types import *
-from typing import NoReturn
+
+import requests
 
 
-class ProblemAPI:
-    @staticmethod
+class luoguAPI:
+    def __init__(
+            self,
+            base_url="https://www.luogu.com.cn",
+            cookies: LuoguCookies = None
+    ):
+        self.base_url = base_url
+        self.cookies = cookies
+        self.session = requests.Session()
+
+    def _send_request(
+            self,
+            endpoint: str,
+            method: str = "GET",
+            params: RequestParams | None = None,
+            data=None
+    ):
+        url = f"{self.base_url}/{endpoint}"
+        header = {
+            "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:133.0) Gecko/20100101 Firefox/133.",
+            "x-luogu-type": "content-only"
+        }
+        param_final = None if params is None else params.to_json()
+        cookies_final = None if self.cookies is None else self.cookies.to_json()
+
+        response = self.session.request(
+            method, url,
+            headers=header,
+            params=param_final,
+            data=data,
+            cookies=cookies_final,
+
+        )
+
+        return response.json()["currentData"]
+
     def get_problem_list(
-            params: ProblemListParams
-    ) -> list[Problem | ProblemStatus]:
-        raise NotImplementedError
+            self, params: ProblemListRequestParams | None
+    ) -> ProblemListRequestResponse:
+        res = self._send_request(endpoint="problem/list", params=params)
 
-    @staticmethod
-    def get_created_problems(
-            user_id: int,
-            page: int
-    ) -> list[Problem]:
-        raise NotImplementedError
+        res["count"] = res["problems"]["count"]
+        res["perPage"] = res["problems"]["perPage"]
+        res["problems"] = res["problems"]["result"]
 
-    @staticmethod
+        return ProblemListRequestResponse(res)
+
     def get_problem(
-            problem_id: str,
-            contest_id: int = None
+            self, pid: str,
+            contest_id: int | None = None
     ) -> ProblemData:
-        raise NotImplementedError
+        params = ProblemRequestParams(contest_id=contest_id)
+        res = self._send_request(endpoint=f"problem/{pid}", params=params)
 
-    @staticmethod
-    def create_problem(
-            rq: CreateProblemRequest
-    ) -> str:
-        raise NotImplementedError
+        return ProblemData(res)
 
-    @staticmethod
-    def edit_problem(
-            setting: ProblemSettings
-    ) -> str:
-        raise NotImplementedError
+    def get_problem_setting(
+            self, pid: str,
+    ) -> ProblemSettings:
+        res = self._send_request(endpoint=f"problem/edit/{pid}")
 
-    @staticmethod
-    def edit_problem_testcase(
-            problem_id: str,
-            rq: UpdateTestCasesSettingsRequest
-    ) -> UpdateTestCasesSettingsResponse:
-        raise NotImplementedError
-
-    @staticmethod
-    def delete_problem(
-            pid: str
-    ) -> NoReturn:
-        raise NotImplementedError
-
-    @staticmethod
-    def move_problem(
-            operation: str = "transfer",
-            _type: str = None,
-            teamID: int = None
-    ) -> str:
-        raise NotImplementedError
-
-
-class ProblemSetAPI:
-    @staticmethod
-    def get_problem_set_list(
-            params: ProblemSetListParams
-    ) -> ProblemSetListData:
-        raise NotImplementedError
-
-    @staticmethod
-    def get_created_problem_set(
-            user_id: int,
-            page: int
-    ) -> list[ProblemSet]:
-        raise NotImplementedError
-
-    @staticmethod
-    def get_group_problem_set(
-            group_id: int,
-            page: int
-    ) -> list[ProblemSet]:
-        raise NotImplementedError
-
-    @staticmethod
-    def get_marked_problem_set(
-            user_id: int,
-            page: int
-    ) -> list[ProblemSet]:
-        raise NotImplementedError
-
-    @staticmethod
-    def get_problem_set(
-            problem_set_id: int
-    ) -> ProblemSetData:
-        raise NotImplementedError
-
-    @staticmethod
-    def mark_problem_set(
-            problem_set_id: int
-    ) -> NoReturn:
-        raise NotImplementedError
-
-    @staticmethod
-    def unmark_problem_set(
-            problem_set_id: int
-    ) -> NoReturn:
-        raise NotImplementedError
-
-    @staticmethod
-    def create_problem_set(
-            settings: ProblemSetSettings,
-            provider_user_id: int = None
-    ) -> int:
-        raise NotImplementedError
-
-    @staticmethod
-    def edit_problem_set(
-            settings: ProblemSetSettings,
-    ) -> NoReturn:
-        raise NotImplementedError
-
-    @staticmethod
-    def move_problem_set(
-            _type: int,
-            provider_user_id: int = None
-    ) -> NoReturn:
-        raise NotImplementedError
-
-    @staticmethod
-    def delete_problem_set(
-            problem_set_id: int
-    ) -> NoReturn:
-        raise NotImplementedError
-
-
-class ContestAPI:
-    @staticmethod
-    def get_contest_list(
-
-    ) -> list[Contest]:
-        raise NotImplementedError
-
-    @staticmethod
-    def get_created_contest_list(
-            user_id: int,
-            page: int
-    ) -> list[Contest]:
-        raise NotImplementedError
-
-    @staticmethod
-    def get_joined_contest_list(
-            user_id: int,
-            page: int
-    ) -> list[Contest]:
-        raise NotImplementedError
-
-    @staticmethod
-    def get_contest(
-            contest_id: int
-    ) -> ContestData:
-        raise NotImplementedError
-
-    @staticmethod
-    def get_contest_scoreboard(
-            contest_id: int
-    ) -> GetScoreboardResponse:
-        raise NotImplementedError
-
-    @staticmethod
-    def create_contest(
-            rq: EditContestRequest,
-    ) -> int:
-        raise NotImplementedError
-
-    @staticmethod
-    def edit_contest(
-            contest_id: int,
-            rq: EditContestRequest
-    ) -> int:
-        raise NotImplementedError
-
-    @staticmethod
-    def delete_contest(
-            contest_id: int
-    ) -> NoReturn:
-        raise NotImplementedError
-
-    @staticmethod
-    def join_contest(
-            contest_id: int,
-            code: str
-    ) -> int:
-        raise NotImplementedError
-
-
-class RecordAPI:
-    @staticmethod
-    def get_record_list(
-            params: RecordListParams
-    ) -> list[BaseRecord]:
-        raise NotImplementedError
-
-    @staticmethod
-    def get_record(
-            record_id: int
-    ) -> RecordData:
-        raise NotImplementedError
-
-
-class DiscussAPI:
-    raise NotImplementedError
-
-
-class UserAPI:
-    raise NotImplementedError
-
-
-class GroupAPI:
-    raise NotImplementedError
-
-
-class ChatAPI:
-    raise NotImplementedError
-
-
-class ThemeAPI:
-    raise NotImplementedError
-
-
-class ImageAPI:
-    raise NotImplementedError
-
-
-class BlogAPI:
-    raise NotImplementedError
-
-
-class PasteAPI:
-    raise NotImplementedError
-
-
-class IDE_API:
-    raise NotImplementedError
-
-
-class VerifyAPI:
-    raise NotImplementedError
-
-
-class FeedAPI:
-    raise NotImplementedError
-
-
-class PaintAPI:
-    raise NotImplementedError
-
-
-class RankingAPI:
-    raise NotImplementedError
-
+        return res

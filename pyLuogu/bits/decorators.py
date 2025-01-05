@@ -7,7 +7,7 @@ __all__ = [
     'with_return'
 ]
 
-from .typing import *
+from .typings import *
 import functools
 import time
 

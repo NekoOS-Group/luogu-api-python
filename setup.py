@@ -7,6 +7,6 @@ setup(
     url='https://github.com/bzy-nya/luogu-api-python',
     license='GLP3.0',
     author='bzy',
-    author_email='bzy.mic@qq.com',
+    author_email='bzy.cirno@gmail.com',
     description=''
 )

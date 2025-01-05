@@ -2,11 +2,12 @@ __all__ = [
     'decorating',
     'transfer',
     'str_type',
+    'str_type_of',
     'str_val',
     'refresh_decorator'
 ]
 
-from .typing import *
+from .typings import *
 import re
 
 
@@ -59,7 +60,7 @@ def transfer(
     return x
 
 
-def str_type(
+def str_type_of(
         x: Any,
         origin: bool = False
 ) -> str:
@@ -72,9 +73,14 @@ def str_type(
     Returns:
         string of type of x
     """
+
     s = str(type(x)).split("'")[1]
-    if type(x) is list:
+    if x is None:
+        return decorating("Unknown", 31)
+    elif type(x) is list:
         return decorating("list[%d]" % len(x), 34)
+    elif type(x) is tuple:
+        return decorating("(", 34) + " ,".join([str_type_of(v) for v in x]) + decorating(")", 34)
     elif type(x) in [int, float, bool]:
         return decorating(s, 36)
     elif type(x) is str:
@@ -85,6 +91,26 @@ def str_type(
         s = s.split('.')[-1]
         if not origin:
             s = decorating("%s<at %s>" % (s, hex(id(x))), '30;47', '0;37')
+    return s
+
+
+def str_type(
+        t,
+        origin: bool = False
+) -> str:
+    s = str(t).split("'")[1]
+    if t is list:
+        return decorating("list", 34)
+    if t is tuple:
+        return decorating("tuple", 34)
+    elif t in [int, float, bool]:
+        return decorating(s, 36)
+    elif t is str:
+        return decorating(s, 33)
+    else:
+        s = s.split('.')[-1]
+        if not origin:
+            s = decorating("%s" % s, '30;47', '0;37')
     return s
 
 
