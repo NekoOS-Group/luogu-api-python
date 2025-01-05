@@ -13,5 +13,4 @@ print(res)
 
 res = luogu.get_problem_setting(pid=res.problems[0].pid)
 
-res = luogu.get_problem_setting(pid="P1001")
 print(res)

@@ -129,4 +129,4 @@ dmypy.json
 .pyre/
 
 examples/cookies.json
-.idea/
+.idea
