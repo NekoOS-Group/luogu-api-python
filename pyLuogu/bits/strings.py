@@ -7,14 +7,13 @@ __all__ = [
     'refresh_decorator'
 ]
 
-from .typings import *
 import re
 
 
 def decorating(
         x: str,
-        command: Union[int, str] = 30,
-        default: Union[int, str] = 37
+        command: int | str = 30,
+        default: int | str = 37
 ) -> str:
     """Make string colorful
 
@@ -61,7 +60,7 @@ def transfer(
 
 
 def str_type_of(
-        x: Any,
+        x,
         origin: bool = False
 ) -> str:
     """detect the type of x and return a printable string
@@ -115,7 +114,7 @@ def str_type(
 
 
 def str_val(
-        x: Any,
+        x,
         origin: bool = False
 ) -> str:
     """

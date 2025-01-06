@@ -4,11 +4,10 @@ __all__ = [
     "Printable"
 ]
 
-from .typings import *
 from .strings import str_type_of, str_val, decorating, str_type
 
 
-def make_list(val: Any) -> list:
+def make_list(val) -> list:
     if isinstance(val, list):
         return list(val)
     else:
@@ -27,6 +26,7 @@ class JsonSerializable:
         """
         初始化对象，将 JSON 数据映射到对象属性
         """
+
         def handle_nested_type(_value, _expected_type):
             """
             处理嵌套类型的转换
@@ -39,20 +39,19 @@ class JsonSerializable:
                     raise TypeError(f"Expected a list of {inner_type}, got {type(_value)}")
                 return [handle_nested_type(v, inner_type) for v in _value]
 
-            if isinstance(_expected_type, tuple):
+            elif isinstance(_expected_type, tuple):
                 if not isinstance(_value, (list, tuple)) or len(_value) != len(_expected_type):
                     raise TypeError(f"Expected a tuple of {_expected_type}, got {type(_value)} with value {_value}")
                 return tuple(handle_nested_type(v, t) for v, t in zip(_value, _expected_type))
 
-            if isinstance(_expected_type, dict):
+            elif isinstance(_expected_type, dict):
                 if not isinstance(_value, dict):
                     raise TypeError(f"Expected a dict of {_expected_type}, got {type(_value)}")
 
-
-            if issubclass(_expected_type, JsonSerializable):
+            elif issubclass(_expected_type, JsonSerializable):
                 return _expected_type(json=_value)
 
-            if not isinstance(_value, _expected_type):
+            elif not isinstance(_value, _expected_type):
                 raise TypeError(f"Expected {_expected_type}, got {type(_value)}")
 
             return _value
@@ -71,7 +70,6 @@ class JsonSerializable:
 
             setattr(self, key, value)
 
-        # 补全未提供的字段
         for key, expected_type in self.__type_dict__.items():
             if not hasattr(self, key):
                 setattr(self, key, None)  # 默认值为 None
@@ -80,6 +78,7 @@ class JsonSerializable:
         """
         转换对象为 JSON 格式（字典）
         """
+
         def serialize(_value):
             if isinstance(_value, JsonSerializable):
                 return _value.to_json()  # 递归处理嵌套对象

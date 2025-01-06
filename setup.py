@@ -1,12 +1,12 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(
     name='luogu-api-python',
-    version='0.0.1-build',
-    packages=[''],
-    url='https://github.com/bzy-nya/luogu-api-python',
+    description='python implement of luogu API',
+    version='0.0.2',
+    packages=find_packages(include=['pyLuogu']),
+    url='https://github.com/NekoOS-Group/luogu-api-python',
     license='GLP3.0',
     author='bzy',
-    author_email='bzy.cirno@gmail.com',
-    description=''
+    author_email='bzy.cirno@gmail.com'
 )

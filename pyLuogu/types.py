@@ -2,13 +2,11 @@ import json
 
 from .bits.ultility import JsonSerializable, Printable
 
-
 class LuoguType(JsonSerializable, Printable):
     __type_dict__ = {}
 
     def __init__(self,json=None):
         super().__init__(json)
-
 
 class RequestParams(LuoguType):
     pass
@@ -195,8 +193,16 @@ class ProblemRequestParams(RequestParams):
     ):
         self.contest_id = contest_id
 
+class Attachment(LuoguType):
+    __type_dict__ = {
+        "size": int,  # 附件大小（字节）
+        "uploadTime": int,  # 上传时间（时间戳）
+        "downloadLink": str,  # 下载链接
+        "id": str,  # 附件 ID
+        "fileName": str  # 文件名
+    }
 
-class ProblemAbstract(LuoguType):
+class ProblemaSummary(LuoguType):
     __type_dict__ = {
         "pid": str,
         "title": str,
@@ -209,10 +215,20 @@ class ProblemAbstract(LuoguType):
         "fullScore": int,
         "type": str
     }
+    pid: str
+    title: str
+    difficulty: int
+    tags: [int]
+    wantsTranslation: bool
+    totalSubmit: int
+    totalAccepted: int
+    flag: int
+    fullScore: int
+    type: str
 
-class ProblemDetails(ProblemAbstract):
+class ProblemDetails(ProblemaSummary):
     __type_dict__ = {
-        **ProblemAbstract.__type_dict__,
+        **ProblemaSummary.__type_dict__,
         "background": str,
         "description": str,
         "inputFormat": str,
@@ -220,13 +236,7 @@ class ProblemDetails(ProblemAbstract):
         "samples": [(str, str)],  # 嵌套列表
         "hint": str,
         # "provider": (UserSummary, TeamSummary),
-        # "attachments": [{
-        #    "size": int,
-        #    "uploadTime": int,
-        #    "downloadLink": str,
-        #    "id": str,
-        #    "fileName": str
-        # }],
+        "attachments": [Attachment],
         "canEdit": bool,
         # "limits": {
         #     "time": [int],
@@ -242,10 +252,22 @@ class ProblemDetails(ProblemAbstract):
         # },
         "translation": str
     }
+    background: str
+    description: str
+    inputFormat: str
+    outputFormat: str
+    samples: [(str, str)]
+    hint: str
+    attachments: [Attachment]
+    canEdit: bool
+    showScore: bool
+    score: int
+    stdCode: str
+    translation: str
 
 class ProblemData(LuoguType):
     __type_dict__ = {
-        "problem": ProblemDetails,  # 嵌套 ProblemDetails，并支持 Maybe 类型
+        "problem": ProblemDetails,
         # "contest": ContestSummary,
         # "discussions": [LegacyPostSummary],
         "bookmarked": bool,
@@ -255,6 +277,38 @@ class ProblemData(LuoguType):
         "lastCode": str,
         # "privilegedTeams": [TeamSummary],
         "userTranslation": str,
+    }
+    problem: ProblemDetails
+    bookmarked: bool
+    vjudgeUsername: str
+    lastLanguage: int
+    lastCode: str
+    userTranslation: str
+
+class TestCase(LuoguType):
+    __type_dict__ = {
+        "upid": int,  # 测试用例唯一 ID
+        "inputFileName": str,  # 输入文件名
+        "outputFileName": str,  # 输出文件名
+        "timeLimit": int,  # 时间限制（毫秒）
+        "memoryLimit": int,  # 内存限制（MB）
+        "fullScore": int,  # 满分
+        "isPretest": bool,  # 是否为预测试
+        "subtaskId": int  # 所属子任务 ID
+    }
+    upid: int
+    inputFileName: str
+    outputFileName: str
+    timeLimit: int
+    memoryLimit: int
+    fullScore: int
+    isPretest: bool
+    subtaskId: int
+
+class ScoringStrategy(LuoguType):
+    __type_dict__ = {
+        "type": int,    # 评分策略类型
+        "script": str   # 评分脚本内容
     }
 
 class ProblemSettings(LuoguType):
@@ -275,15 +329,102 @@ class ProblemSettings(LuoguType):
         "showScore": bool,
         "flag": int
     }
+    title: str
+    background: str
+    description: str
+    inputFormat: str
+    outputFormat: str
+    samples: [(str, str)]
+    hint: str
+    translation: str
+    needsTranslation: bool
+    acceptSolution: bool
+    allowDataDownload: bool
+    tags: [int]
+    difficulty: int
+    showScore: bool
+    flag: int
+    @staticmethod
+    def get_default():
+        return ProblemSettings(
+            json={
+                "title": "",
+                "background": "",
+                "description": "",
+                "inputFormat": "",
+                "outputFormat": "",
+                "samples": [],
+                "hint": "",
+                "translation": "",
+                "needsTranslation": False,
+                "acceptSolution": True,
+                "allowDataDownload": False,
+                "tags": [],
+                "difficulty": 0,
+                "showScore": True,
+                "flag": 0
+            }
+        )
 
+class TestCaseSettings(LuoguType):
+    __type_dict__ = {
+        "cases": [TestCase],  # 测试用例列表
+        # "subtaskScoringStrategies": {int: ScoringStrategy},  # 子任务评分策略（字典）
+        "scoringStrategy": ScoringStrategy,  # 总评分策略
+        "showSubtask": bool  # 是否显示子任务
+    }
+    case: [TestCase]
+    subtaskScoringStrategies: {int: ScoringStrategy}
+    scoringStrategy: ScoringStrategy
+    showSubtask: bool
 
 class ProblemListRequestResponse(Response):
     __type_dict__ = {
-        "problems": [ProblemAbstract],
+        "problems": [ProblemaSummary],
         "count": int,
         "perPage": int,
         "page": int
     }
+    problems : [ProblemaSummary]
+
+class ProblemSettingsRequestResponse(Response):
+    __type_dict__ = {
+        "problem": ProblemDetails,
+        "problemSettings": ProblemSettings,
+        "testCaseSettings": TestCaseSettings,
+        "comment": str,
+        "clonedFrom": bool,
+        "isClonedTestCases": bool,
+        "updating": bool,
+        "testDataDownloadLink": str,
+        # "updateStatus": {
+        #     "success": bool,
+        #     "message": str
+        # }
+        "isProblemAdmin": bool,
+        # "privilegedTeams": [TeamSummary]
+    }
+    problemSettings: ProblemSettings
+    testCaseSettings: TestCaseSettings
+    comment: str
+
+class ProblemModifiedResponse(Response):
+    __type_dict__ = {
+        "pid": str
+    }
+    pid: str
+
+class UpdateTestCasesSettingsResponse(Response):
+    __type_dict__ = {
+        "problem": ProblemDetails,
+        "testCases": [TestCase],
+        "scoringStrategy": ScoringStrategy,
+        # "subtaskScoringStrategies": [ScoringStrategy]
+    }
+    problem: ProblemDetails
+    testCases: [TestCase]
+    scoringStrategy: ScoringStrategy
+    subtaskScoringStrategies: [ScoringStrategy]
 
 class LuoguCookies(LuoguType):
     __type_dict__ = {

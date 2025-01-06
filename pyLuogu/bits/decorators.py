@@ -7,7 +7,6 @@ __all__ = [
     'with_return'
 ]
 
-from .typings import *
 import functools
 import time
 
@@ -19,7 +18,7 @@ def bread(
         begin=None,
         end=None,
         exp=None
-) -> Callable[[Any], Any]:
+):
     def decorator(f):
 
         @functools.wraps(f)
@@ -56,9 +55,9 @@ def bread(
 
 
 def log_enter(
-        handler: handler_of(str),
+        handler,
         logArgs: bool = False
-) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+):
     def log_debug(f, *args, **kwargs):
         if logArgs:
             arg = "(" + ", ".join([repr(x) for x in args] + [f"{k}={v!r}" for k, v in kwargs.items()]) + ")"
@@ -71,17 +70,19 @@ def log_enter(
     return log_debug
 
 
-def add_logging(f: Callable[P, T]) -> Callable[P, T]:
+def add_logging(f):
     """A type-safe decorator to add logging to a function."""
 
-    def inner(*args: P.args, **kwargs: P.kwargs) -> T:
+    def inner(*args, **kwargs):
         return f(*args, **kwargs)
+
+    return inner
 
 
 def log_exit(
-        handler: handler_of(str),
+        handler,
         logRets: bool = False
-) -> Callable[[Callable[[Any], Any]], Callable[[Any], Any]]:
+):
     def log_debug(f, *args, **kwargs):
         if logRets:
             ret = " returned " + repr(kwargs['message_by_function'])
@@ -95,20 +96,20 @@ def log_exit(
 
 
 def log_full(
-        handler: handler_of(str)
-) -> Callable[[Callable[[Any], Any]], Callable[[Any], Any]]:
+        handler
+):
     return bread(log_enter(handler, True), log_exit(handler, True))
 
 
 def log_stack(
-        handler: handler_of(str)
-) -> Callable[[Callable[[Any], Any]], Callable[[Any], Any]]:
+        handler
+):
     return bread(log_enter(handler), log_exit(handler))
 
 
 def log_timer(
-        handler: handler_of(str)
-) -> Callable[[Any], Any]:
+        handler
+):
     def begin(*args, **kwargs):
         return time.perf_counter()
 
@@ -120,8 +121,8 @@ def log_timer(
 
 
 def log_exceptions(
-        handler: handler_of(str)
-) -> Callable[[Any], Any]:
+        handler
+):
     def log_error(e):
         message = decorating(f"{str_type(e)} : {e}", 31)
         handler(message)
@@ -130,11 +131,11 @@ def log_exceptions(
 
 
 def with_info(
-        handler: handler_of(str),
-        begin: Optional[str] = None,
-        end: Optional[str] = None,
-        report_params: bool = False
-) -> Callable[[Any], Any]:
+        handler,
+        begin=None,
+        end=None,
+        report_params=False
+):
     def info_begin(f, *args, **kwargs):
         if begin is not None:
             if report_params:
@@ -153,8 +154,8 @@ def with_info(
 
 
 def with_return(
-        _type: Union[type, list, tuple, dict]
-) -> Callable[[Callable[[Any], Any]], Callable[[Any], Any]]:
+        _type
+):
     def decorator(f):
         @functools.wraps(f)
         def wrapper(*args, **kwargs) -> _type:

@@ -1,5 +1,3 @@
-import json
-
 import pyLuogu
 
 cookies = pyLuogu.LuoguCookies.from_file("cookies.json")
@@ -11,6 +9,5 @@ print(param)
 res = luogu.get_problem_list(params=param)
 print(res)
 
-res = luogu.get_problem_setting(pid=res.problems[0].pid)
-
-print(res)
+res = luogu.get_problem_settings(pid=res.problems[0].pid)
+print(res.problemSettings.translation)
