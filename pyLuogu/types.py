@@ -1,4 +1,4 @@
-import json
+from typing import List, Tuple
 
 from .bits.ultility import JsonSerializable, Printable
 
@@ -20,15 +20,6 @@ class ListRequestParams(RequestParams):
         "orderBy": int
     }
 
-    def __init__(
-            self,
-            page: int = None,
-            orderBy: int = None
-    ):
-        super().__init__()
-        self.page = page
-        self.orderBy = orderBy
-
 class ProblemListRequestParams(ListRequestParams):
     __type_dict__ = {
         "page": int,
@@ -40,39 +31,12 @@ class ProblemListRequestParams(ListRequestParams):
         "tag": str
     }
 
-    def __init__(
-            self,
-            page: int = None,
-            orderBy: int = None,
-            keyword: str = None,
-            content: bool = None,
-            type: str = None,
-            difficulty: int = None,
-            tag: str = None
-    ):
-        super().__init__(page, orderBy)
-        self.keyword = keyword
-        self.content = content
-        self.type = type
-        self.difficulty = difficulty
-        self.tag = tag
-
 class ProblemSetListRequestParams(ListRequestParams):
     __type_dict__ = {
         "page": int,
         "keyword": str,
         "type": str
     }
-
-    def __init__(
-            self,
-            page: int = None,
-            keyword: str = None,
-            type: str = None
-    ):
-        super().__init__(page=page)
-        self.keyword = keyword
-        self.type = type
 
 class RecordListRequestParams(ListRequestParams):
     __type_dict__ = {
@@ -85,23 +49,6 @@ class RecordListRequestParams(ListRequestParams):
         "orderBy": int
     }
 
-    def __init__(
-            self,
-            page: int = None,
-            pid: str = None,
-            contestId: int = None,
-            user: str = None,
-            status: int = None,
-            language: int = None,
-            orderBy: int = None
-    ):
-        super().__init__(page=page, orderBy=orderBy)
-        self.pid = pid
-        self.contestId = contestId
-        self.user = user
-        self.status = status
-        self.language = language
-
 class ThemeListRequestParams(ListRequestParams):
     __type_dict__ = {
         "page": int,
@@ -109,18 +56,6 @@ class ThemeListRequestParams(ListRequestParams):
         "order": str,
         "type": str
     }
-
-    def __init__(
-            self,
-            page: int = None,
-            orderBy: str = None,
-            order: str = None,
-            type: str = None
-    ):
-        super().__init__(page=page, orderBy=None)  # orderBy 是 str 类型，这里设置为 None
-        self.orderBy = orderBy
-        self.order = order
-        self.type = type
 
 class ArticleListRequestParams(LuoguType):
     __type_dict__ = {
@@ -131,23 +66,6 @@ class ArticleListRequestParams(LuoguType):
         "promoted": bool,
         "title": str
     }
-
-    def __init__(
-            self,
-            user: int,
-            page: int = None,
-            category: int = None,
-            ascending: bool = None,
-            promoted: bool = None,
-            title: str = None
-    ):
-        super().__init__()
-        self.user = user
-        self.page = page
-        self.category = category
-        self.ascending = ascending
-        self.promoted = promoted
-        self.title = title
 
 class BlogListRequestParams(ListRequestParams):
     __type_dict__ = {
@@ -175,23 +93,66 @@ class RankingListRequestParams(ListRequestParams):
         "orderBy": int
     }
 
-    def __init__(
-            self,
-            page: int = None,
-            orderBy: int = None
-    ):
-        super().__init__(page=page, orderBy=orderBy)
-
 class ProblemRequestParams(RequestParams):
     __type_dict__ = {
         "contest_id": int
     }
 
-    def __init__(
-            self,
-            contest_id: int = None
-    ):
-        self.contest_id = contest_id
+class UserSummary(LuoguType):
+    __type_dict__ = {
+        "uid": int,  # 用户 ID
+        "name": str,  # 用户名
+        "avatar": str,  # 用户头像 URL
+        "slogan": str,  # 用户口号（可选）
+        "badge": str,  # 用户徽章（可选）
+        "isAdmin": bool,  # 是否为管理员
+        "isBanned": bool,  # 是否被封禁
+        "color": str,  # 用户颜色标记
+        "ccfLevel": int,  # 用户 CCF 等级
+        "background": str,  # 用户背景信息（可选）
+        "isRoot": bool,  # 是否为根用户（可选）
+    }
+    uid: int
+    name: str
+    avatar: str
+    slogan: str
+    badge: str
+    isAdmin: bool
+    isBanned: bool
+    color: str
+    ccfLevel: int
+    background: str
+    isRoot: bool
+
+class TeamSummary(LuoguType):
+    __type_dict__ = {
+        "id": int,         # 团队 ID
+        "name": str,       # 团队名称
+        "isPremium": bool  # 是否为高级团队
+    }
+
+    id: int
+    name: str
+    isPremium: bool
+
+class Provider(LuoguType):
+    __type_dict__ = {
+        "user": UserSummary,
+        "team": TeamSummary
+    }
+    user: UserSummary
+    team: TeamSummary
+
+    def __init__(self, json=""):
+        self.user = None
+        self.team = None
+        if json.get("uid") is not None:
+            self.user = UserSummary(json)
+        else:
+            self.team = TeamSummary(json)
+
+    def get(self):
+        return self.user or self.team
 
 class Attachment(LuoguType):
     __type_dict__ = {
@@ -201,6 +162,11 @@ class Attachment(LuoguType):
         "id": str,  # 附件 ID
         "fileName": str  # 文件名
     }
+    size: int
+    uploadTime: int
+    downloadLink: str
+    id: str
+    fileName: str
 
 class ProblemaSummary(LuoguType):
     __type_dict__ = {
@@ -218,13 +184,16 @@ class ProblemaSummary(LuoguType):
     pid: str
     title: str
     difficulty: int
-    tags: [int]
+    tags: List[int]
     wantsTranslation: bool
     totalSubmit: int
     totalAccepted: int
     flag: int
     fullScore: int
     type: str
+
+    def inline(self):
+        return f"{self.pid} {self.title} {self.tags} {self.difficulty}"
 
 class ProblemDetails(ProblemaSummary):
     __type_dict__ = {
@@ -235,7 +204,7 @@ class ProblemDetails(ProblemaSummary):
         "outputFormat": str,
         "samples": [(str, str)],  # 嵌套列表
         "hint": str,
-        # "provider": (UserSummary, TeamSummary),
+        "provider": Provider,
         "attachments": [Attachment],
         "canEdit": bool,
         # "limits": {
@@ -252,13 +221,24 @@ class ProblemDetails(ProblemaSummary):
         # },
         "translation": str
     }
+    pid: str
+    title: str
+    difficulty: int
+    tags: List[int]
+    wantsTranslation: bool
+    totalSubmit: int
+    totalAccepted: int
+    flag: int
+    fullScore: int
+    type: str
     background: str
     description: str
     inputFormat: str
     outputFormat: str
-    samples: [(str, str)]
+    samples: List[Tuple[str, str]]
     hint: str
-    attachments: [Attachment]
+    provider: Provider
+    attachments: List[Attachment]
     canEdit: bool
     showScore: bool
     score: int
@@ -321,12 +301,14 @@ class ProblemSettings(LuoguType):
         "samples": [(str, str)],
         "hint": str,
         "translation": str,
+        "comment": str,
         "needsTranslation": bool,
         "acceptSolution": bool,
         "allowDataDownload": bool,
         "tags": [int],
         "difficulty": int,
         "showScore": bool,
+        "providerID": int,
         "flag": int
     }
     title: str
@@ -334,15 +316,17 @@ class ProblemSettings(LuoguType):
     description: str
     inputFormat: str
     outputFormat: str
-    samples: [(str, str)]
+    samples: List[Tuple[str, str]]
     hint: str
+    comment: str
     translation: str
     needsTranslation: bool
     acceptSolution: bool
     allowDataDownload: bool
-    tags: [int]
+    tags: List[int]
     difficulty: int
     showScore: bool
+    providerID: int
     flag: int
     @staticmethod
     def get_default():
@@ -355,6 +339,7 @@ class ProblemSettings(LuoguType):
                 "outputFormat": "",
                 "samples": [],
                 "hint": "",
+                "comment": "",
                 "translation": "",
                 "needsTranslation": False,
                 "acceptSolution": True,
@@ -362,6 +347,7 @@ class ProblemSettings(LuoguType):
                 "tags": [],
                 "difficulty": 0,
                 "showScore": True,
+                providerID: None,
                 "flag": 0
             }
         )
@@ -385,15 +371,17 @@ class ProblemListRequestResponse(Response):
         "perPage": int,
         "page": int
     }
-    problems : [ProblemaSummary]
+    problems : List[ProblemaSummary]
+    count : int
+    perPage: int
+    page: int
 
 class ProblemSettingsRequestResponse(Response):
     __type_dict__ = {
-        "problem": ProblemDetails,
+        "problemDetails": ProblemDetails,
         "problemSettings": ProblemSettings,
         "testCaseSettings": TestCaseSettings,
-        "comment": str,
-        "clonedFrom": bool,
+        # "clonedFrom": bool | dict,
         "isClonedTestCases": bool,
         "updating": bool,
         "testDataDownloadLink": str,
@@ -404,9 +392,9 @@ class ProblemSettingsRequestResponse(Response):
         "isProblemAdmin": bool,
         # "privilegedTeams": [TeamSummary]
     }
+    problemDetails: ProblemDetails
     problemSettings: ProblemSettings
     testCaseSettings: TestCaseSettings
-    comment: str
 
 class ProblemModifiedResponse(Response):
     __type_dict__ = {
@@ -422,7 +410,7 @@ class UpdateTestCasesSettingsResponse(Response):
         # "subtaskScoringStrategies": [ScoringStrategy]
     }
     problem: ProblemDetails
-    testCases: [TestCase]
+    testCases: List[TestCase]
     scoringStrategy: ScoringStrategy
     subtaskScoringStrategies: [ScoringStrategy]
 
@@ -431,18 +419,3 @@ class LuoguCookies(LuoguType):
         "__client_id": str,
         "_uid": str,
     }
-
-    def __init__(self, __client_id: str, _uid: str):
-        self.__setattr__( "__client_id", __client_id )
-        self._uid = _uid
-
-    @staticmethod
-    def from_file(path: str):
-        ret = LuoguCookies("", "")
-
-        with open(path, 'r') as json_file:
-            data = json.load(json_file)
-
-        ret.parse(data)
-
-        return ret

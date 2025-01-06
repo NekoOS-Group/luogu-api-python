@@ -4,6 +4,8 @@ __all__ = [
     "Printable"
 ]
 
+import json
+
 from .strings import str_type_of, str_val, decorating, str_type
 
 
@@ -27,7 +29,7 @@ class JsonSerializable:
         初始化对象，将 JSON 数据映射到对象属性
         """
 
-        def handle_nested_type(_value, _expected_type):
+        def handle_nested_type(_key, _value, _expected_type):
             """
             处理嵌套类型的转换
             """
@@ -37,12 +39,12 @@ class JsonSerializable:
                 inner_type = _expected_type[0]
                 if not isinstance(_value, list):
                     raise TypeError(f"Expected a list of {inner_type}, got {type(_value)}")
-                return [handle_nested_type(v, inner_type) for v in _value]
+                return [handle_nested_type(None, v, inner_type) for v in _value]
 
             elif isinstance(_expected_type, tuple):
                 if not isinstance(_value, (list, tuple)) or len(_value) != len(_expected_type):
                     raise TypeError(f"Expected a tuple of {_expected_type}, got {type(_value)} with value {_value}")
-                return tuple(handle_nested_type(v, t) for v, t in zip(_value, _expected_type))
+                return tuple(handle_nested_type(None, v, t) for v, t in zip(_value, _expected_type))
 
             elif isinstance(_expected_type, dict):
                 if not isinstance(_value, dict):
@@ -52,7 +54,7 @@ class JsonSerializable:
                 return _expected_type(json=_value)
 
             elif not isinstance(_value, _expected_type):
-                raise TypeError(f"Expected {_expected_type}, got {type(_value)}")
+                raise TypeError(f"{_key} Expected {_expected_type}, got {type(_value)}")
 
             return _value
 
@@ -66,7 +68,7 @@ class JsonSerializable:
                 continue
 
             if value is not None:
-                value = handle_nested_type(value, expected_type)
+                value = handle_nested_type(key, value, expected_type)
 
             setattr(self, key, value)
 
@@ -99,6 +101,13 @@ class JsonSerializable:
             json_data[key] = serialize(attr_value)
 
         return json_data
+
+    @classmethod
+    def from_file(cls, path: str):
+        with open(path, 'r') as json_file:
+            data = json.load(json_file)
+
+        return cls(json=data)
 
 
 class Printable:

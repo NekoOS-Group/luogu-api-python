@@ -1,3 +1,5 @@
+from time import sleep
+
 import requests
 from bs4 import BeautifulSoup
 
@@ -41,14 +43,22 @@ class luoguAPI:
         param_final = None if params is None else params.to_json()
         data_final = None if data is None else json.dumps(data)
 
-        response = self.session.request(
-            method, url,
-            headers=headers,
-            params=param_final,
-            data=data_final,
-            cookies=self.cookies,
-        )
-        response.raise_for_status()
+        for _ in range(5):
+            try:
+                response = self.session.request(
+                    method, url,
+                    headers=headers,
+                    params=param_final,
+                    data=data_final,
+                    cookies=self.cookies,
+                    timeout=5
+                )
+                response.raise_for_status()
+                break
+            except requests.ConnectTimeout:
+                continue
+        else:
+            raise requests.ConnectTimeout
 
         ret = response.json()
         if ret.get("currentData") is None:
@@ -69,11 +79,30 @@ class luoguAPI:
         if csrf_meta and "content" in csrf_meta.attrs:
             self.x_csrf_token = csrf_meta["content"]
         else:
-            raise ValueError("CSRF token not found in the HTML response")
+            sleep(5)
+            self._get_csrf()
 
     def get_problem_list(
-            self, params: ProblemListRequestParams | None
+            self,
+            page: int = None,
+            orderBy: int = None,
+            keyword: str = None,
+            content: bool = None,
+            _type: str = None,
+            difficulty: int = None,
+            tag: str = None,
+            params: ProblemListRequestParams | None = None
     ) -> ProblemListRequestResponse:
+        if params is None:
+            params = ProblemListRequestParams(json={
+                "page": page,
+                "orderBy": orderBy,
+                "keyword": keyword,
+                "content": content,
+                "type": _type,
+                "difficulty": difficulty,
+                "tag": tag
+            })
         res = self._send_request(endpoint="problem/list", params=params)
 
         res["count"] = res["problems"]["count"]
@@ -85,7 +114,7 @@ class luoguAPI:
     def get_created_problem_list(
             self, page: int | None = None
     ):
-        params = ListRequestParams(page=page)
+        params = ListRequestParams(json={"page": page})
         res = self._send_request(endpoint="api/user/createdProblems", params=params)
 
         res["count"] = res["problems"]["count"]
@@ -98,7 +127,7 @@ class luoguAPI:
             self, pid: str,
             contest_id: int | None = None
     ) -> ProblemData:
-        params = ProblemRequestParams(contest_id=contest_id)
+        params = ProblemRequestParams(json={"contest_id": contest_id})
         res = self._send_request(endpoint=f"problem/{pid}", params=params)
 
         return ProblemData(res)
@@ -108,7 +137,12 @@ class luoguAPI:
     ) -> ProblemSettingsRequestResponse:
         res = self._send_request(endpoint=f"problem/edit/{pid}")
 
+        # print(json.dumps(res))
+
+        res["problemDetails"] = res["problem"]
         res["problemSettings"] = res["setting"]
+        res["problemSettings"]["comment"] = res["problem"]["comment"]
+        res["problemSettings"]["providerID"] = res["problem"]["provider"]["uid"] or res["problem"]["provider"]["id"]
         res["testCaseSettings"] = dict()
         res["testCaseSettings"]["cases"] = res["testCases"]
         res["testCaseSettings"]["scoringStrategy"] = res["scoringStrategy"]
@@ -117,14 +151,20 @@ class luoguAPI:
 
         return ProblemSettingsRequestResponse(res)
 
-    def edit_problem_settings(
+    def update_problem_settings(
             self, pid: str,
-            new_settings: ProblemSettings
+            new_settings: ProblemSettings,
+            _type: str = None
     ) -> ProblemModifiedResponse:
         res = self._send_request(
-            endpoint=f"/fe/api/problem/edit/{pid}",
+            endpoint=f"fe/api/problem/edit/{pid}",
             method="POST",
-            data=new_settings.to_json()
+            data={
+                "settings": new_settings.to_json(),
+                "type": _type,
+                "providerID": new_settings.providerID,
+                "comment": new_settings.comment
+            }
         )
 
         return ProblemModifiedResponse(res)
@@ -132,17 +172,15 @@ class luoguAPI:
     def create_problem(
             self, setting: ProblemSettings,
             _type: str = "U",
-            providerID: int | None = None,
-            comment: str | None = None
     ) -> ProblemModifiedResponse:
         res = self._send_request(
-            endpoint=f"/fe/api/problem/new",
+            endpoint=f"fe/api/problem/new",
             method="POST",
             data={
                 "settings": setting.to_json(),
                 "type": _type,
-                "providerID": providerID,
-                "comment": comment
+                "providerID": setting.providerID,
+                "comment": setting.comment
             }
         )
 
@@ -152,7 +190,7 @@ class luoguAPI:
             self, pid: str,
     ) -> bool:
         res = self._send_request(
-            endpoint=f"/fe/api/problem/delete/{pid}",
+            endpoint=f"fe/api/problem/delete/{pid}",
             method="POST",
             data={}
         )
