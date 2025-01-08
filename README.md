@@ -13,9 +13,29 @@ $ cd luogu-api-python
 $ python setup.py install
 ```
 
+## Example 
+
+```python
+### create a new problem with pyLuogu
+import pyLuogu
+
+title = "Neko Cooperation"
+cookies = pyLuogu.LuoguCookies.from_file("cookies.json")
+luogu = pyLuogu.luoguAPI(cookies=cookies)
+
+settings = pyLuogu.ProblemSettings.get_default()
+settings.title = title
+
+pid = luogu.create_problem(settings=settings).pid
+print(f"You create a new problem with pid : {pid}")
+
+problem = luogu.get_problem(pid).problem
+assert problem.title == title
+```
+
 ## Todo list
 
-method of class LuoguAPI
+Methods of class `LuoguAPI`
 
  - [x] Problem
    - [x] get_problem_list
@@ -28,6 +48,9 @@ method of class LuoguAPI
    - [x] create_problem
    - [x] delete_problem
    - [ ] transfer_problem
+   - [ ] download_testcases
+   - [ ] upload_testcases
  - [x] UserOperation
    - [ ] login
    - [ ] logout
+   - [ ] me

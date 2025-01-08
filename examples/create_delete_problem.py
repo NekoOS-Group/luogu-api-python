@@ -7,15 +7,15 @@ luogu = pyLuogu.luoguAPI(cookies=cookies)
 res = luogu.get_created_problem_list()
 print(f"The number of your created problem : {res.count}")
 
-setting = ProblemSettings.get_default()
-setting.title = "Neko Cooperation"
+settings = ProblemSettings.get_default()
+settings.title = "Neko Cooperation"
 
-res = luogu.create_problem(setting=setting)
+res = luogu.create_problem(settings=settings)
 pid = res.pid
 print(f"You create a new problem with pid : {pid}")
 
-res = luogu.get_problem(pid)
-assert res.problem.title == "Neko Cooperation"
+problem = luogu.get_problem(pid).problem
+assert problem.title == "Neko Cooperation"
 
 res = luogu.get_created_problem_list()
 print(f"The number of your created problem after luogu.create_problem: {res.count}")

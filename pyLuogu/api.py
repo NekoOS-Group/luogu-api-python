@@ -143,11 +143,11 @@ class luoguAPI:
     def get_problem(
             self, pid: str,
             contest_id: int | None = None
-    ) -> ProblemData:
+    ) -> ProblemDataRequestResponse:
         params = ProblemRequestParams(json={"contest_id": contest_id})
         res = self._send_request(endpoint=f"problem/{pid}", params=params)
 
-        return ProblemData(res)
+        return ProblemDataRequestResponse(res)
 
     def get_problem_settings(
             self, pid: str,
@@ -192,17 +192,17 @@ class luoguAPI:
         raise NotImplementedError
 
     def create_problem(
-            self, setting: ProblemSettings,
+            self, settings: ProblemSettings,
             _type: ProblemType | None = "U",
     ) -> ProblemModifiedResponse:
         res = self._send_request(
             endpoint=f"fe/api/problem/new",
             method="POST",
             data={
-                "settings": setting.to_json(),
+                "settings": settings.to_json(),
                 "type": _type,
-                "providerID": setting.providerID,
-                "comment": setting.comment
+                "providerID": settings.providerID,
+                "comment": settings.comment
             }
         )
 
@@ -221,12 +221,23 @@ class luoguAPI:
 
     def transfer_problem(
             self, pid: str,
-            _type: ProblemType = "T",
-            is_clone: bool = False,
-            target_team_ID: int | None = None
+            target: ProblemType,
+            target_team_ID: int | None = None,
+            is_clone: bool = False
     ) -> ProblemModifiedResponse:
         raise NotImplementedError
 
+    def download_testcases(
+            self, pid: int
+    ):
+        raise NotImplementedError
+    
+    def upload_testcases(
+            self, pid: int,
+            path: str
+    ):
+        raise NotImplementedError
+        
     def get_user(self, uid: int):
         raise NotImplementedError
 

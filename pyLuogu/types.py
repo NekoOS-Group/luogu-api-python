@@ -242,26 +242,6 @@ class ProblemDetails(ProblemaSummary):
     stdCode: str
     translation: str
 
-class ProblemData(LuoguType):
-    __type_dict__ = {
-        "problem": ProblemDetails,
-        # "contest": ContestSummary,
-        # "discussions": [LegacyPostSummary],
-        "bookmarked": bool,
-        "vjudgeUsername": str,
-        # "recommendations": [LegacyProblemSummary],  # 列表中的每个元素是 LegacyProblemSummary
-        "lastLanguage": int,
-        "lastCode": str,
-        # "privilegedTeams": [TeamSummary],
-        "userTranslation": str,
-    }
-    problem: ProblemDetails
-    bookmarked: bool
-    vjudgeUsername: str
-    lastLanguage: int
-    lastCode: str
-    userTranslation: str
-
 class TestCase(LuoguType):
     __type_dict__ = {
         "upid": int,  # 测试用例唯一 ID
@@ -344,7 +324,7 @@ class ProblemSettings(LuoguType):
                 "tags": [],
                 "difficulty": 0,
                 "showScore": True,
-                providerID: None,
+                "providerID": None,
                 "flag": 0
             }
         )
@@ -356,8 +336,8 @@ class TestCaseSettings(LuoguType):
         "scoringStrategy": ScoringStrategy,  # 总评分策略
         "showSubtask": bool  # 是否显示子任务
     }
-    case: [TestCase]
-    subtaskScoringStrategies: {int: ScoringStrategy}
+    case: List[TestCase]
+    # subtaskScoringStrategies: {int: ScoringStrategy}
     scoringStrategy: ScoringStrategy
     showSubtask: bool
 
@@ -372,6 +352,26 @@ class ProblemListRequestResponse(Response):
     count : int
     perPage: int
     page: int
+
+class ProblemDataRequestResponse(LuoguType):
+    __type_dict__ = {
+        "problem": ProblemDetails,
+        # "contest": ContestSummary,
+        # "discussions": [LegacyPostSummary],
+        "bookmarked": bool,
+        "vjudgeUsername": str,
+        # "recommendations": [LegacyProblemSummary],  # 列表中的每个元素是 LegacyProblemSummary
+        "lastLanguage": int,
+        "lastCode": str,
+        # "privilegedTeams": [TeamSummary],
+        "userTranslation": str,
+    }
+    problem: ProblemDetails
+    bookmarked: bool
+    vjudgeUsername: str
+    lastLanguage: int
+    lastCode: str
+    userTranslation: str
 
 class ProblemSettingsRequestResponse(Response):
     __type_dict__ = {
@@ -409,7 +409,7 @@ class UpdateTestCasesSettingsResponse(Response):
     problem: ProblemDetails
     testCases: List[TestCase]
     scoringStrategy: ScoringStrategy
-    subtaskScoringStrategies: [ScoringStrategy]
+    # subtaskScoringStrategies: List[ScoringStrategy]
 
 class LuoguCookies(LuoguType):
     __type_dict__ = {
