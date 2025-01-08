@@ -1,3 +1,4 @@
+import json
 from time import sleep
 
 import requests
@@ -55,7 +56,7 @@ class luoguAPI:
                 )
                 response.raise_for_status()
                 break
-            except requests.ConnectTimeout:
+            except (requests.ConnectTimeout, requests.exceptions.ReadTimeout):
                 continue
         else:
             raise requests.ConnectTimeout
@@ -82,15 +83,25 @@ class luoguAPI:
             sleep(5)
             self._get_csrf()
 
+    def login(
+            self, user_name: str, password: str,
+            captcha: Literal["input", "ocr"],
+            two_step_verify: Literal["google", "email"] | None = None
+    ) -> bool:
+        raise NotImplementedError
+
+    def logout(self):
+        raise NotImplementedError
+
     def get_problem_list(
             self,
-            page: int = None,
-            orderBy: int = None,
-            keyword: str = None,
-            content: bool = None,
-            _type: str = None,
-            difficulty: int = None,
-            tag: str = None,
+            page: int | None = None,
+            orderBy: int | None = None,
+            keyword: str | None = None,
+            content: bool | None = None,
+            _type: ProblemType | None = None,
+            difficulty: int | None = None,
+            tag: str | None = None,
             params: ProblemListRequestParams | None = None
     ) -> ProblemListRequestResponse:
         if params is None:
@@ -113,7 +124,7 @@ class luoguAPI:
 
     def get_created_problem_list(
             self, page: int | None = None
-    ):
+    ) -> ProblemListRequestResponse:
         params = ListRequestParams(json={"page": page})
         res = self._send_request(endpoint="api/user/createdProblems", params=params)
 
@@ -122,6 +133,12 @@ class luoguAPI:
         res["problems"] = res["problems"]["result"]
 
         return ProblemListRequestResponse(res)
+
+    def get_team_problem_list(
+            self, tid: int,
+            page: int | None = None
+    ) -> ProblemListRequestResponse:
+        raise NotImplementedError
 
     def get_problem(
             self, pid: str,
@@ -154,14 +171,13 @@ class luoguAPI:
     def update_problem_settings(
             self, pid: str,
             new_settings: ProblemSettings,
-            _type: str = None
     ) -> ProblemModifiedResponse:
         res = self._send_request(
             endpoint=f"fe/api/problem/edit/{pid}",
             method="POST",
             data={
                 "settings": new_settings.to_json(),
-                "type": _type,
+                "type": None,
                 "providerID": new_settings.providerID,
                 "comment": new_settings.comment
             }
@@ -169,9 +185,15 @@ class luoguAPI:
 
         return ProblemModifiedResponse(res)
 
+    def update_testcases_settings(
+            self, pid: str,
+            new_settings: TestCaseSettings
+    ) -> UpdateTestCasesSettingsResponse:
+        raise NotImplementedError
+
     def create_problem(
             self, setting: ProblemSettings,
-            _type: str = "U",
+            _type: ProblemType | None = "U",
     ) -> ProblemModifiedResponse:
         res = self._send_request(
             endpoint=f"fe/api/problem/new",
@@ -197,7 +219,16 @@ class luoguAPI:
 
         return res["_empty"]
 
-    def update_testcases_settings(
-            self, new_settings: TestCaseSettings
-    ) -> UpdateTestCasesSettingsResponse:
+    def transfer_problem(
+            self, pid: str,
+            _type: ProblemType = "T",
+            is_clone: bool = False,
+            target_team_ID: int | None = None
+    ) -> ProblemModifiedResponse:
+        raise NotImplementedError
+
+    def get_user(self, uid: int):
+        raise NotImplementedError
+
+    def me(self):
         raise NotImplementedError

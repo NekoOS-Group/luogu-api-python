@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 setup(
     name='luogu-api-python',
     description='python implement of luogu API',
-    version='0.0.2',
+    version='0.0.1',
     packages=find_packages(include=['pyLuogu']),
     url='https://github.com/NekoOS-Group/luogu-api-python',
     license='GLP3.0',

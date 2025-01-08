@@ -33,6 +33,9 @@ class JsonSerializable:
             """
             处理嵌套类型的转换
             """
+            if _value is None:
+                return None
+
             if isinstance(_expected_type, list):
                 if len(_expected_type) != 1:
                     raise TypeError(f"List type must have exactly one element type: {_expected_type}")
@@ -108,6 +111,10 @@ class JsonSerializable:
             data = json.load(json_file)
 
         return cls(json=data)
+
+    def store(self, path: str):
+        with open(path, 'w') as json_file:
+            json_file.write(json.dumps(self.to_json()))
 
 
 class Printable:

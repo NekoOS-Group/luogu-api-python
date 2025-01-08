@@ -1,4 +1,6 @@
-from typing import List, Tuple
+from typing import List, Tuple, Literal
+
+ProblemType = Literal["P", "U", "T", "B", "CF", "AT", "UVA", "SP"]
 
 from .bits.ultility import JsonSerializable, Printable
 
@@ -30,6 +32,13 @@ class ProblemListRequestParams(ListRequestParams):
         "difficulty": int,
         "tag": str
     }
+    page: int
+    orderBy: int
+    keyword: str
+    content: bool
+    type: ProblemType
+    difficulty: int
+    tag: str
 
 class ProblemSetListRequestParams(ListRequestParams):
     __type_dict__ = {
@@ -74,18 +83,6 @@ class BlogListRequestParams(ListRequestParams):
         "type": str,
         "page": int
     }
-
-    def __init__(
-            self,
-            uid: int,
-            keyword: str = None,
-            type: str = None,
-            page: int = None
-    ):
-        super().__init__(page=page)
-        self.uid = uid
-        self.keyword = keyword
-        self.type = type
 
 class RankingListRequestParams(ListRequestParams):
     __type_dict__ = {
@@ -381,7 +378,7 @@ class ProblemSettingsRequestResponse(Response):
         "problemDetails": ProblemDetails,
         "problemSettings": ProblemSettings,
         "testCaseSettings": TestCaseSettings,
-        # "clonedFrom": bool | dict,
+        # "clonedFrom": dict,
         "isClonedTestCases": bool,
         "updating": bool,
         "testDataDownloadLink": str,
