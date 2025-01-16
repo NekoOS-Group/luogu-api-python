@@ -129,5 +129,7 @@ dmypy.json
 .pyre/
 
 examples/cookies.json
+examples/openai_key
+examples/qwen_key
 examples/cache/
 .idea

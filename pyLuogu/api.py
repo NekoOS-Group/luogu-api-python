@@ -54,6 +54,7 @@ class luoguAPI:
                     cookies=self.cookies,
                     timeout=5
                 )
+
                 response.raise_for_status()
                 break
             except (requests.ConnectTimeout, requests.exceptions.ReadTimeout):
@@ -68,8 +69,11 @@ class luoguAPI:
         return ret["currentData"]
 
     def _get_csrf(self):
+        self.get_problem("P1001")
         headers = {
             "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:133.0) Gecko/20100101 Firefox/133.",
+            "x-luogu-type": "content-only",
+            "Content-Type": "text/html"
         }
         response = self.session.get(self.base_url, headers=headers, cookies=self.cookies)
         response.raise_for_status()  # 确保请求成功

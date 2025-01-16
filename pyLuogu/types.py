@@ -328,6 +328,12 @@ class ProblemSettings(LuoguType):
                 "flag": 0
             }
         )
+    def get_markdown(self):
+        return "\n## 题目背景\n" + str(self.background) + \
+        "\n## 题目描述\n" + str(self.description) + \
+        "\n## 输入格式\n" + str(self.inputFormat) + \
+        "\n## 输出格式\n" + str(self.outputFormat) + \
+        "\n## 数据范围与提示\n" + str(self.hint)
 
 class TestCaseSettings(LuoguType):
     __type_dict__ = {
