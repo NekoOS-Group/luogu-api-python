@@ -1,39 +1,60 @@
 # luogu-api-python
-a python implement of luogu API
+A Python implementation of the Luogu API
 
-upstream docs: [https://github.com/sjx233/luogu-api-docs](https://github.com/sjx233/luogu-api-docs)
+## Project Description
 
-## Get Start
+`luogu-api-python` is a Python library that provides an interface to interact with the Luogu online judge system. It allows users to programmatically manage problems, and user operations on Luogu. This library aims to simplify the process of automating tasks on Luogu by providing easy-to-use methods and classes.
 
-You can get it by run following command in shell:
+Upstream docs: [https://github.com/sjx233/luogu-api-docs](https://github.com/sjx233/luogu-api-docs)
+
+## Installation
+
+To install the package, use pip:
 
 ```commandline
-$ git clone https://github.com/bzy-nya/luogu-api-python.git
-$ cd luogu-api-python
-$ python setup.py install
+$ pip3 install luogu-api-python
 ```
 
-## Example 
+To install the package from source, follow these steps:
+
+1. Clone the repository:
+    ```commandline
+    $ git clone https://github.com/NekoOS-Group/luogu-api-python.git
+    $ cd luogu-api-python
+    ```
+
+2. Install the dependencies:
+    ```commandline
+    $ pip3 install -r requirements.txt
+    ```
+
+3. Install the package:
+    ```commandline
+    $ python3 setup.py install
+    ```
+
+## Usage
+
+Here is an example of how to use the package:
 
 ```python
-### create a new problem with pyLuogu
 import pyLuogu
 
-title = "Neko Cooperation"
+# Initialize the API with cookies
 cookies = pyLuogu.LuoguCookies.from_file("cookies.json")
 luogu = pyLuogu.luoguAPI(cookies=cookies)
 
-settings = pyLuogu.ProblemSettings.get_default()
-settings.title = title
-
-pid = luogu.create_problem(settings=settings).pid
-print(f"You create a new problem with pid : {pid}")
-
-problem = luogu.get_problem(pid).problem
-assert problem.title == title
+# Get a list of problems
+problems = luogu.get_problem_list()
+for problem in problems:
+    print(problem.title)
 ```
 
-## Todo list
+## Contributing
+
+Contributions are welcome! Please open an issue or submit a pull request.
+
+## Todo List
 
 Methods of class `LuoguAPI`
 
@@ -54,3 +75,8 @@ Methods of class `LuoguAPI`
    - [ ] login
    - [ ] logout
    - [ ] me
+
+Others
+
+ - [ ] asyncLuoguAPI
+ - [ ] staticLuoguAPI
