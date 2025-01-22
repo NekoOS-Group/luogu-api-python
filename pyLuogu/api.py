@@ -1,11 +1,16 @@
 import json
-from time import sleep
-
+import logging
+import time
+     
 import requests
-from bs4 import BeautifulSoup
+import bs4
 
 from .types import *
+from .errors import *
 
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 class luoguAPI:
     def __init__(
@@ -26,25 +31,23 @@ class luoguAPI:
             data: dict | None = None
     ):
         url = f"{self.base_url}/{endpoint}"
-        if method == "GET":
-            headers = {
-                "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:133.0) Gecko/20100101 Firefox/133.",
-                "x-luogu-type": "content-only",
-            }
-        else:
-            self._get_csrf()
-            headers = {
-                "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:133.0) Gecko/20100101 Firefox/133.",
-                "x-luogu-type": "content-only",
-                "Content-Type": "application/json",
-                "referer": "https://www.luogu.com.cn/",
-                "x-csrf-token": self.x_csrf_token
-            }
-
+        headers = self._get_headers(method)
         param_final = None if params is None else params.to_json()
         data_final = None if data is None else json.dumps(data)
 
-        for _ in range(5):
+        logger.info(f"Sending {method} request to {url}")
+
+        def _parse_response(_response: requests.Response) -> dict:
+            try:
+                ret = _response.json()
+                if ret.get("currentData") is None:
+                    return ret
+                return ret["currentData"]
+            except json.JSONDecodeError as e:
+                logger.error(f"JSON decode error: {e}")
+                raise
+
+        for attempt in range(5):
             try:
                 response = self.session.request(
                     method, url,
@@ -54,38 +57,96 @@ class luoguAPI:
                     cookies=self.cookies,
                     timeout=5
                 )
-
-                response.raise_for_status()
-                break
-            except (requests.ConnectTimeout, requests.exceptions.ReadTimeout):
+            except (requests.ConnectTimeout, requests.exceptions.ReadTimeout) as e:
+                logger.warning(f"Attempt {attempt + 1}: Timeout error - {e}")
+                time.sleep(1)
                 continue
+            except requests.RequestException as e:
+                logger.error(f"Request error: {e}")
+                raise RequestError("Request error") from e
+            except:
+                raise RequestError("Request error")
+
+            try:
+                response.raise_for_status()
+
+                if response.json().get("currentTemplate") == "AuthLogin":
+                    raise AuthenticationError("Need Login")
+                
+                if response.json().get("code") == 404:
+                    raise NotFoundError(f"Resource not found{endpoint}")
+            
+                return _parse_response(response)
+            except requests.HTTPError as e:
+                if response.status_code == 401:
+                    raise AuthenticationError("Authentication failed") from e
+                elif response.status_code == 403:
+                    logger.warning("CSRF token expired, refreshing token...")
+                    self._get_csrf()
+                    headers = self._get_headers(method)  # Refresh headers with new CSRF token
+                    continue  # Retry the request
+                elif response.status_code == 404:
+                    raise NotFoundError("Resource not found") from e
+                elif response.status_code == 429:
+                    raise RateLimitError("Rate limit exceeded") from e
+                elif 500 <= response.status_code < 600:
+                    raise ServerError("Server error") from e
+                else:
+                    raise RequestError(f"HTTP error: {e}", status_code=response.status_code) from e
         else:
-            raise requests.ConnectTimeout
+            logger.error("Failed to send request after 5 attempts")
+            raise RequestError("Failed to send request after 5 attempts")
 
-        ret = response.json()
-        if ret.get("currentData") is None:
-            return ret
-
-        return ret["currentData"]
+    def _get_headers(self, method: str) -> dict:
+        headers = {
+            "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:133.0) Gecko/20100101 Firefox/133.",
+            "x-luogu-type": "content-only",
+        }
+        if method != "GET":
+            if not self.x_csrf_token:
+                self._get_csrf()
+            headers.update({
+                "Content-Type": "application/json",
+                "referer": "https://www.luogu.com.cn/",
+                "x-csrf-token": self.x_csrf_token
+            })
+        return headers
 
     def _get_csrf(self):
-        self.get_problem("P1001")
         headers = {
             "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:133.0) Gecko/20100101 Firefox/133.",
             "x-luogu-type": "content-only",
             "Content-Type": "text/html"
         }
-        response = self.session.get(self.base_url, headers=headers, cookies=self.cookies)
-        response.raise_for_status()  # 确保请求成功
 
-        soup = BeautifulSoup(response.text, "html.parser")
-        csrf_meta = soup.select_one("meta[name='csrf-token']")
+        for attempt in range(5):
+            try:
+                response = self.session.get(self.base_url, headers=headers, cookies=self.cookies)
+                response.raise_for_status()
+                
+                soup = bs4.BeautifulSoup(response.text, "html.parser")
+                csrf_meta = soup.select_one("meta[name='csrf-token']")
 
-        if csrf_meta and "content" in csrf_meta.attrs:
-            self.x_csrf_token = csrf_meta["content"]
-        else:
-            sleep(5)
-            self._get_csrf()
+                if csrf_meta and "content" in csrf_meta.attrs:
+                    self.x_csrf_token = csrf_meta["content"]
+                    logger.info("CSRF token fetched successfully")
+                    return
+                else:
+                    logger.warning("CSRF token not found, retrying...")
+                    self.get_problem(pid="P1000") # refresh the session
+                    time.sleep(1)
+            except (requests.ConnectTimeout, requests.exceptions.ReadTimeout) as e:
+                logger.warning(f"Attempt {attempt + 1}: Timeout error - {e}")
+                time.sleep(1)
+            except requests.HTTPError as e:
+                logger.error(f"HTTP error: {e}")
+                raise
+            except requests.RequestException as e:
+                logger.error(f"Request error: {e}")
+                raise
+
+        logger.error("Failed to fetch CSRF token after 5 attempts")
+        raise RequestError("Failed to fetch CSRF token after 5 attempts")
 
     def login(
             self, user_name: str, password: str,
@@ -142,7 +203,17 @@ class luoguAPI:
             self, tid: int,
             page: int | None = None
     ) -> ProblemListRequestResponse:
-        raise NotImplementedError
+        params = ListRequestParams(json={"page": page})
+        res = self._send_request(
+            endpoint=f"api/team/problems/{tid}", 
+            params=params
+        )
+
+        res["count"] = res["problems"]["count"]
+        res["perPage"] = res["problems"]["perPage"]
+        res["problems"] = res["problems"]["result"]
+
+        return ProblemListRequestResponse(res)
 
     def get_problem(
             self, pid: str,
@@ -158,7 +229,7 @@ class luoguAPI:
     ) -> ProblemSettingsRequestResponse:
         res = self._send_request(endpoint=f"problem/edit/{pid}")
 
-        # print(json.dumps(res))
+        print(res["subtaskScoringStrategies"])
 
         res["problemDetails"] = res["problem"]
         res["problemSettings"] = res["setting"]
@@ -193,7 +264,13 @@ class luoguAPI:
             self, pid: str,
             new_settings: TestCaseSettings
     ) -> UpdateTestCasesSettingsResponse:
-        raise NotImplementedError
+        res = self._send_request(
+            endpoint=f"/fe/api/problem/editTestCase/{pid}",
+            method="POST",
+            data=new_settings.to_json()
+        )
+
+        return UpdateTestCasesSettingsResponse(res)
 
     def create_problem(
             self, settings: ProblemSettings,
@@ -247,3 +324,7 @@ class luoguAPI:
 
     def me(self):
         raise NotImplementedError
+
+    def get_tags(self) -> TagRequestResponse:
+        res = self._send_request(endpoint="/_lfe/tags")
+        return TagRequestResponse(res)

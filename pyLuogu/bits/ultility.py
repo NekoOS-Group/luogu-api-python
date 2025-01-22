@@ -52,6 +52,8 @@ class JsonSerializable:
             elif isinstance(_expected_type, dict):
                 if not isinstance(_value, dict):
                     raise TypeError(f"Expected a dict of {_expected_type}, got {type(_value)}")
+                key_type, val_type = list(_expected_type.items())[0]
+                return {handle_nested_type(None, k, key_type): handle_nested_type(None, v, val_type) for k, v in _value.items()}
 
             elif issubclass(_expected_type, JsonSerializable):
                 return _expected_type(json=_value)
@@ -92,7 +94,7 @@ class JsonSerializable:
             elif isinstance(_value, tuple):
                 return [serialize(v) for v in _value]  # 元组转换为列表
             elif isinstance(_value, dict):
-                return {k: serialize(v) for k, v in _value.items()}  # 递归处理字典
+                return {serialize(k): serialize(v) for k, v in _value.items()}  # 递归处理字典
             else:
                 return _value
 
@@ -138,6 +140,16 @@ class Printable:
                             new_offset + addi)
                     else:
                         s += new_offset + tail + f"{x}[{p}] -> {str_type_of(y[p])} : {str_val(y[p])}\n"
+            elif isinstance(y, dict):
+                s += offset + tail + f"{str_type_of(y)} {x}:\n"
+                new_offset = offset + addi
+                for p, (k, v) in enumerate(y.items()):
+                    tail = "├─ " if p != len(y) - 1 else "└─ "
+                    addi = "│  " if p != len(y) - 1 else "   "
+                    if isinstance(v, Printable):
+                        s += new_offset + tail + f"{x}[{str_val(k)}] -> {str_type_of(v)} :\n" + v.__tree__(new_offset + addi)
+                    else:
+                        s += new_offset + tail + f"{x}[{str_val(k)}] -> {str_type_of(v)} : {str_val(v)}\n"
             elif isinstance(y, Printable):
                 s += offset + tail + f"{str_type_of(y)} {x} :\n" + y.__tree__(offset + addi)
             else:

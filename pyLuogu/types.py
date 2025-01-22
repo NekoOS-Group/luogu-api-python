@@ -1,4 +1,4 @@
-from typing import List, Tuple, Literal
+from typing import List, Tuple, Literal, Dict
 
 ProblemType = Literal["P", "U", "T", "B", "CF", "AT", "UVA", "SP"]
 
@@ -137,10 +137,11 @@ class Provider(LuoguType):
         "user": UserSummary,
         "team": TeamSummary
     }
-    user: UserSummary
-    team: TeamSummary
+    user: UserSummary | None
+    team: TeamSummary | None
 
-    def __init__(self, json=""):
+    def __init__(self, json=None):
+        super().__init__(json=None)
         self.user = None
         self.team = None
         if json.get("uid") is not None:
@@ -165,7 +166,7 @@ class Attachment(LuoguType):
     id: str
     fileName: str
 
-class ProblemaSummary(LuoguType):
+class ProblemSummary(LuoguType):
     __type_dict__ = {
         "pid": str,
         "title": str,
@@ -192,9 +193,9 @@ class ProblemaSummary(LuoguType):
     def inline(self):
         return f"{self.pid} {self.title} {self.tags} {self.difficulty}"
 
-class ProblemDetails(ProblemaSummary):
+class ProblemDetails(ProblemSummary):
     __type_dict__ = {
-        **ProblemaSummary.__type_dict__,
+        **ProblemSummary.__type_dict__,
         "background": str,
         "description": str,
         "inputFormat": str,
@@ -338,23 +339,45 @@ class ProblemSettings(LuoguType):
 class TestCaseSettings(LuoguType):
     __type_dict__ = {
         "cases": [TestCase],  # 测试用例列表
-        # "subtaskScoringStrategies": {int: ScoringStrategy},  # 子任务评分策略（字典）
+        "subtaskScoringStrategies": {str: ScoringStrategy},  # 子任务评分策略（字典）
         "scoringStrategy": ScoringStrategy,  # 总评分策略
         "showSubtask": bool  # 是否显示子任务
-    }
-    case: List[TestCase]
-    # subtaskScoringStrategies: {int: ScoringStrategy}
+    } 
+    cases: List[TestCase] 
+    subtaskScoringStrategies: Dict[str, ScoringStrategy]
     scoringStrategy: ScoringStrategy
     showSubtask: bool
 
+class TagDetail(LuoguType):
+    __type_dict__ = {
+        "id": int,
+        "name": str,
+        "type": int,
+        "parent": int
+    }
+    id: int
+    name: str
+    type: int
+    parent: int | None
+
+class TagType(LuoguType):
+    __type_dict__ = {
+        "id": int,
+        "name": str,
+        "color": str
+    }
+    id: int
+    name: str
+    color: str
+
 class ProblemListRequestResponse(Response):
     __type_dict__ = {
-        "problems": [ProblemaSummary],
+        "problems": [ProblemSummary],
         "count": int,
         "perPage": int,
         "page": int
     }
-    problems : List[ProblemaSummary]
+    problems : List[ProblemSummary]
     count : int
     perPage: int
     page: int
@@ -366,10 +389,10 @@ class ProblemDataRequestResponse(LuoguType):
         # "discussions": [LegacyPostSummary],
         "bookmarked": bool,
         "vjudgeUsername": str,
-        # "recommendations": [LegacyProblemSummary],  # 列表中的每个元素是 LegacyProblemSummary
+        # "recommendations": [LegacyProblemSummary], 
         "lastLanguage": int,
         "lastCode": str,
-        # "privilegedTeams": [TeamSummary],
+        "privilegedTeams": [TeamSummary],
         "userTranslation": str,
     }
     problem: ProblemDetails
@@ -393,7 +416,7 @@ class ProblemSettingsRequestResponse(Response):
         #     "message": str
         # }
         "isProblemAdmin": bool,
-        # "privilegedTeams": [TeamSummary]
+        "privilegedTeams": [TeamSummary]
     }
     problemDetails: ProblemDetails
     problemSettings: ProblemSettings
@@ -410,12 +433,20 @@ class UpdateTestCasesSettingsResponse(Response):
         "problem": ProblemDetails,
         "testCases": [TestCase],
         "scoringStrategy": ScoringStrategy,
-        # "subtaskScoringStrategies": [ScoringStrategy]
+        "subtaskScoringStrategies": {str: ScoringStrategy}
     }
     problem: ProblemDetails
     testCases: List[TestCase]
     scoringStrategy: ScoringStrategy
-    # subtaskScoringStrategies: List[ScoringStrategy]
+    subtaskScoringStrategies: Dict[str, ScoringStrategy]
+
+class TagRequestResponse(Response):
+    __type_dict__ = {
+        "tags": [TagDetail],
+        "types": [TagType]
+    }
+    tags: List[TagDetail]
+    types: List[TagType]
 
 class LuoguCookies(LuoguType):
     __type_dict__ = {

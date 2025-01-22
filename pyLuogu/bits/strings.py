@@ -10,11 +10,7 @@ __all__ = [
 import re
 
 
-def decorating(
-        x: str,
-        command: int | str = 30,
-        default: int | str = 37
-) -> str:
+def decorating(x: str, command: int | str = 30, default: int | str = '0;37') -> str:
     """Make string colorful
 
     Args:
@@ -28,16 +24,13 @@ def decorating(
     return f"\033[{str(command)}m{x}\033[{str(default)}m"
 
 
-def refresh_decorator(
-        x: str
-) -> str:
-    return re.sub('\033\\[[0-9;]*m', "", x, count=0, flags=0)
+def refresh_decorator(x: str) -> str:
+    """Remove ANSI escape sequences from a string"""
+    return re.sub(r'\033\[[0-9;]*m', "", x)
 
 
-def transfer(
-        x: str
-) -> str:
-    """replace special character to escape character
+def transfer(x: str) -> str:
+    """Replace special characters with escape sequences
 
     Args:
         x: the input string
@@ -52,18 +45,18 @@ def transfer(
         >>> transfer('1\\n1')
         1\\n1
     """
-    x = x.replace('\n', decorating('\\n', 31, 33))
-    x = x.replace('\r', decorating('\\r', 31, 33))
-    x = x.replace('\t', decorating('\\t', 31, 33))
-
+    replacements = {
+        '\n': '\\n',
+        '\r': '\\r',
+        '\t': '\\t'
+    }
+    for key, value in replacements.items():
+        x = x.replace(key, decorating(value, 31, 33))
     return x
 
 
-def str_type_of(
-        x,
-        origin: bool = False
-) -> str:
-    """detect the type of x and return a printable string
+def str_type_of(x, origin: bool = False) -> str:
+    """Detect the type of x and return a printable string
 
     Args:
         x: input data
@@ -72,67 +65,70 @@ def str_type_of(
     Returns:
         string of type of x
     """
-
-    s = str(type(x)).split("'")[1]
+    type_str = str(type(x)).split("'")[1]
     if x is None:
         return decorating("Unknown", 31)
-    elif type(x) is list:
-        return decorating("list[%d]" % len(x), 34)
-    elif type(x) is tuple:
-        return decorating("(", 34) + " ,".join([str_type_of(v) for v in x]) + decorating(")", 34)
-    elif type(x) in [int, float, bool]:
-        return decorating(s, 36)
-    elif type(x) is str:
-        return decorating(s, 33)
+    elif isinstance(x, list):
+        return decorating(f"list[{len(x)}]", 34)
+    elif isinstance(x, tuple):
+        return decorating("(", 34) + ", ".join([str_type_of(v) for v in x]) + decorating(")", 34)
+    elif isinstance(x, dict):
+        k, v = list(x.items())[0]
+        return decorating("map: ", 34) + str_type(type(k)) + " -> " + str_type(type(v))
+    elif isinstance(x, (int, float, bool)):
+        return decorating(type_str, 36)
+    elif isinstance(x, str):
+        return decorating(type_str, 33)
     elif isinstance(x, BaseException):
-        return s
+        return type_str
     else:
-        s = s.split('.')[-1]
+        type_str = type_str.split('.')[-1]
         if not origin:
-            s = decorating("%s<at %s>" % (s, hex(id(x))), '30;47', '0;37')
-    return s
+            type_str = decorating(f"{type_str}<at {hex(id(x))}>", '30;47')
+    return type_str
 
 
-def str_type(
-        t,
-        origin: bool = False
-) -> str:
-    s = str(t).split("'")[1]
-    if t is list:
-        return decorating("list", 34)
-    if t is tuple:
-        return decorating("tuple", 34)
-    elif t in [int, float, bool]:
-        return decorating(s, 36)
-    elif t is str:
-        return decorating(s, 33)
-    else:
-        s = s.split('.')[-1]
-        if not origin:
-            s = decorating("%s" % s, '30;47', '0;37')
-    return s
-
-
-def str_val(
-        x,
-        origin: bool = False
-) -> str:
-    """
-    If x is a string, then return string 'x' with color 33.
-
-    Others return x.__str__()
+def str_type(t, origin: bool = False) -> str:
+    """Return a string representation of the type t
 
     Args:
-        origin:
+        t: input type
+        origin: not colored
+
+    Returns:
+        string of type t
+    """
+    type_str = str(t).split("'")[1]
+    if t is list:
+        return decorating("list", 34)
+    elif t is tuple:
+        return decorating("tuple", 34)
+    elif t in [int, float, bool]:
+        return decorating(type_str, 36)
+    elif t is str:
+        return decorating(type_str, 33)
+    else:
+        type_str = type_str.split('.')[-1]
+        if not origin:
+            type_str = decorating(type_str, '30;47')
+    return type_str
+
+
+def str_val(x, origin: bool = False) -> str:
+    """Return a string representation of the value x
+
+    Args:
         x: input object
+        origin: not colored
 
     Returns:
         string format of x
-
     """
     if origin:
         return repr(x)
     s = str(x)
+    if len(s) > 50:
+        s = s[:50] + "..."
     if isinstance(x, str):
         s = decorating("'" + transfer(s) + "'", 33)
     return s

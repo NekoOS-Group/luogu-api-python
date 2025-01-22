@@ -12,7 +12,7 @@ setup(
     description='A Python library to interact with the Luogu online judge system',
     long_description=long_description,
     long_description_content_type="text/markdown",
-    version='0.0.1',
+    version='0.0.1-alpha',
     packages=['pyLuogu', 'pyLuogu.bits'],
     install_requires=install_requires,
     url='https://github.com/NekoOS-Group/luogu-api-python',

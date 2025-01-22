@@ -23,12 +23,7 @@ To install the package from source, follow these steps:
     $ cd luogu-api-python
     ```
 
-2. Install the dependencies:
-    ```commandline
-    $ pip3 install -r requirements.txt
-    ```
-
-3. Install the package:
+2. Install the package:
     ```commandline
     $ python3 setup.py install
     ```
@@ -40,12 +35,11 @@ Here is an example of how to use the package:
 ```python
 import pyLuogu
 
-# Initialize the API with cookies
-cookies = pyLuogu.LuoguCookies.from_file("cookies.json")
-luogu = pyLuogu.luoguAPI(cookies=cookies)
+# Initialize the API without cookies
+luogu = pyLuogu.luoguAPI()
 
 # Get a list of problems
-problems = luogu.get_problem_list()
+problems = luogu.get_problem_list().problems
 for problem in problems:
     print(problem.title)
 ```
@@ -54,27 +48,65 @@ for problem in problems:
 
 Contributions are welcome! Please open an issue or submit a pull request.
 
+### Pull Request
+
+1. Fork the repository on GitHub.
+2. Clone your forked repository to your local machine:
+    ```commandline
+    $ git clone https://github.com/your-username/luogu-api-python.git
+    $ cd luogu-api-python
+    ```
+3. Create a new branch for your feature or bugfix:
+    ```commandline
+    $ git checkout -b feature-or-bugfix-name
+    ```
+4. Make your changes and commit them with a descriptive commit message:
+    ```commandline
+    $ git add .
+    $ git commit -m "Description of your changes"
+    ```
+5. Push your changes to your forked repository:
+    ```commandline
+    $ git push origin feature-or-bugfix-name
+    ```
+6. Open a pull request on the original repository and provide a detailed description of your changes.
+
+### Reporting Issues
+
+If you find a bug or have a feature request, please open an issue on GitHub. Provide as much detail as possible to help us understand and address the issue.
+
 ## Todo List
 
 Methods of class `LuoguAPI`
 
  - [x] Problem
    - [x] get_problem_list
-   - [x] get_created_problem_list
-   - [ ] get_team_problem_list 
+   - [x] get_team_problem_list 
    - [x] get_problem
    - [x] get_problem_settings
    - [x] update_problem_settings
-   - [ ] update_testcases_settings
+   - [x] update_testcases_settings
    - [x] create_problem
    - [x] delete_problem
    - [ ] transfer_problem
    - [ ] download_testcases
    - [ ] upload_testcases
+ - [] User
+   - [ ] get_user
+   - [ ] search_user
+   - [ ] get_user_setting
+   - [ ] update_user_setting
+   - [ ] get_user_followings_list
+   - [ ] get_user_followers_list
+   - [ ] get_user_blacklist
  - [x] UserOperation
    - [ ] login
    - [ ] logout
    - [ ] me
+   - [ ] submit_code
+   - [x] get_created_problem_list
+ - [x] Miscs
+   - [x] get_tags
 
 Others
 
