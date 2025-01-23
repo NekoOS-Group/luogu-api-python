@@ -23,3 +23,7 @@ class RateLimitError(LuoguAPIError):
 class ServerError(LuoguAPIError):
     """Exception raised for server errors."""
     pass
+
+class ForbiddenError(LuoguAPIError):
+    """Exception raised when the user is forbidden to access the resource."""
+    pass

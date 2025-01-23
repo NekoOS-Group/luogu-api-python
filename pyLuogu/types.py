@@ -1,6 +1,7 @@
-from typing import List, Tuple, Literal, Dict
+from typing import List, Tuple, Literal, Dict, Union, Optional
 
 ProblemType = Literal["P", "U", "T", "B", "CF", "AT", "UVA", "SP"]
+TransferProblemType = Literal["P", "U", "B"] | int
 
 from .bits.ultility import JsonSerializable, Printable
 
@@ -95,6 +96,33 @@ class ProblemRequestParams(RequestParams):
         "contest_id": int
     }
 
+class ProblemSummary(LuoguType):
+    __type_dict__ = {
+        "pid": str,
+        "title": str,
+        "difficulty": int,
+        "tags": [int],
+        "wantsTranslation": bool,
+        "totalSubmit": int,
+        "totalAccepted": int,
+        "flag": int,
+        "fullScore": int,
+        "type": str
+    }
+    pid: str
+    title: str
+    difficulty: int
+    tags: List[int]
+    wantsTranslation: bool
+    totalSubmit: int
+    totalAccepted: int
+    flag: int
+    fullScore: int
+    type: str
+
+    def inline(self):
+        return f"{self.pid} {self.title} {self.tags} {self.difficulty}"
+
 class UserSummary(LuoguType):
     __type_dict__ = {
         "uid": int,  # 用户 ID
@@ -166,33 +194,6 @@ class Attachment(LuoguType):
     id: str
     fileName: str
 
-class ProblemSummary(LuoguType):
-    __type_dict__ = {
-        "pid": str,
-        "title": str,
-        "difficulty": int,
-        "tags": [int],
-        "wantsTranslation": bool,
-        "totalSubmit": int,
-        "totalAccepted": int,
-        "flag": int,
-        "fullScore": int,
-        "type": str
-    }
-    pid: str
-    title: str
-    difficulty: int
-    tags: List[int]
-    wantsTranslation: bool
-    totalSubmit: int
-    totalAccepted: int
-    flag: int
-    fullScore: int
-    type: str
-
-    def inline(self):
-        return f"{self.pid} {self.title} {self.tags} {self.difficulty}"
-
 class ProblemDetails(ProblemSummary):
     __type_dict__ = {
         **ProblemSummary.__type_dict__,
@@ -200,7 +201,7 @@ class ProblemDetails(ProblemSummary):
         "description": str,
         "inputFormat": str,
         "outputFormat": str,
-        "samples": [(str, str)],  # 嵌套列表
+        "samples": [(str, str)],
         "hint": str,
         "provider": Provider,
         "attachments": [Attachment],
@@ -348,6 +349,51 @@ class TestCaseSettings(LuoguType):
     scoringStrategy: ScoringStrategy
     showSubtask: bool
 
+class UserDetails(UserSummary):
+    __type_dict__ = {
+        **UserSummary.__type_dict__,
+        "followingCount": int,
+        "followerCount": int,
+        "ranking": int,
+        "eloValue": int,
+        "blogAddress": str,
+        # "rating": 'Rating',
+        "registerTime": int,
+        "introduction": str,
+        #"prize": List[Dict[str, Union[str, int]]],
+        # "elo": 'EloRatingSummary'
+    }
+    followingCount: int
+    followerCount: int
+    ranking: int
+    eloValue: int
+    blogAddress: str
+    # rating: Rating
+    registerTime: int
+    introduction: str
+    # prize: List[Dict[str, Union[str, int]]]
+    # elo: 'EloRatingSummary'
+
+class UserStats(LuoguType):
+    __type_dict__ = {
+        "userRelationship": int,
+        "reverseUserRelationship": int,
+        "passedProblemCount": int,
+        "submittedProblemCount": int
+    }
+    # ...existing fields...
+
+class SelfDetails(LuoguType):
+    __type_dict__ = {
+        "verified": bool,
+        "unreadMessageCount": int,
+        "unreadNoticeCount": int,
+        "organization": Optional[str],
+        "email": str,
+        "phone": str
+    }
+    # ...existing fields...
+
 class TagDetail(LuoguType):
     __type_dict__ = {
         "id": int,
@@ -440,6 +486,20 @@ class UpdateTestCasesSettingsResponse(Response):
     scoringStrategy: ScoringStrategy
     subtaskScoringStrategies: Dict[str, ScoringStrategy]
 
+class UserDataRequestResponse(LuoguType):
+    __type_dict__ = {
+        "user": UserDetails,
+        # "eloMax": Optional[Dict[str, Union[int, bool]]],
+        "passedProblems": [ProblemSummary],
+        "submittedProblems": [ProblemSummary],
+        # "teams": Optional[List[Dict[str, Union['TeamSummary', 'Group', 'UserSummary', int]]]]
+    }
+    user: UserDetails
+    # eloMax: Optional[Dict[str, Union[int, bool]]]
+    passedProblems: List['ProblemSummary']
+    submittedProblems: List['ProblemSummary']
+    # teams: Optional[List[Dict[str, Union['TeamSummary', 'Group', 'UserSummary', int]]]]
+
 class TagRequestResponse(Response):
     __type_dict__ = {
         "tags": [TagDetail],
@@ -453,3 +513,5 @@ class LuoguCookies(LuoguType):
         "__client_id": str,
         "_uid": str,
     }
+    __client_id: str
+    _uid: str

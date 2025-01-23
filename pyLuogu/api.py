@@ -1,5 +1,4 @@
 import json
-import logging
 import time
      
 import requests
@@ -7,10 +6,7 @@ import bs4
 
 from .types import *
 from .errors import *
-
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+from . import logger
 
 class luoguAPI:
     def __init__(
@@ -70,12 +66,18 @@ class luoguAPI:
             try:
                 response.raise_for_status()
 
+                logger.debug(f"Response: {response.text}")
+
                 if response.json().get("currentTemplate") == "AuthLogin":
                     raise AuthenticationError("Need Login")
                 
+                if response.json().get("code") == 403:
+                    error_message = response.json().get("currentData").get("errorMessage")
+                    raise ForbiddenError( error_message or "Forbidden" )
+                
                 if response.json().get("code") == 404:
                     raise NotFoundError(f"Resource not found{endpoint}")
-            
+
                 return _parse_response(response)
             except requests.HTTPError as e:
                 if response.status_code == 401:
@@ -274,15 +276,17 @@ class luoguAPI:
 
     def create_problem(
             self, settings: ProblemSettings,
-            _type: ProblemType | None = "U",
+            tid : int | None = None,
+
     ) -> ProblemModifiedResponse:
+        _type = "U" if tid is None else "T"
         res = self._send_request(
             endpoint=f"fe/api/problem/new",
             method="POST",
             data={
                 "settings": settings.to_json(),
                 "type": _type,
-                "providerID": settings.providerID,
+                "providerID": tid,
                 "comment": settings.comment
             }
         )
@@ -302,11 +306,29 @@ class luoguAPI:
 
     def transfer_problem(
             self, pid: str,
-            target: ProblemType,
-            target_team_ID: int | None = None,
+            target: TransferProblemType = "U",
             is_clone: bool = False
     ) -> ProblemModifiedResponse:
-        raise NotImplementedError
+        if isinstance(target, int):
+            data = {
+                "type": "T",
+                "teamID": target
+            }
+        else:
+            data = {
+                "type": target
+            }
+        
+        if is_clone:
+            data["operation"] = "clone"
+            
+        res = self._send_request(
+            endpoint=f"fe/api/problem/transfer/{pid}",
+            method="POST",
+            data=data
+        )
+
+        return ProblemModifiedResponse(res)
 
     def download_testcases(
             self, pid: int
@@ -319,11 +341,13 @@ class luoguAPI:
     ):
         raise NotImplementedError
         
-    def get_user(self, uid: int):
-        raise NotImplementedError
+    def get_user(self, uid: int) -> UserDataRequestResponse:
+        res = self._send_request(endpoint=f"user/{uid}")
 
-    def me(self):
-        raise NotImplementedError
+        return UserDataRequestResponse(res)
+
+    def me(self) -> UserDetails:
+        return self.get_user(self.cookies["_uid"].split("_")[0]).user
 
     def get_tags(self) -> TagRequestResponse:
         res = self._send_request(endpoint="/_lfe/tags")

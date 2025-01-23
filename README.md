@@ -88,11 +88,11 @@ Methods of class `LuoguAPI`
    - [x] update_testcases_settings
    - [x] create_problem
    - [x] delete_problem
-   - [ ] transfer_problem
+   - [x] transfer_problem
    - [ ] download_testcases
    - [ ] upload_testcases
- - [] User
-   - [ ] get_user
+ - [x] User
+   - [x] get_user
    - [ ] search_user
    - [ ] get_user_setting
    - [ ] update_user_setting
@@ -102,7 +102,7 @@ Methods of class `LuoguAPI`
  - [x] UserOperation
    - [ ] login
    - [ ] logout
-   - [ ] me
+   - [x] me
    - [ ] submit_code
    - [x] get_created_problem_list
  - [x] Miscs

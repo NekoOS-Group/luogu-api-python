@@ -8,6 +8,7 @@ __all__ = [
 ]
 
 import re
+from typing import get_args, get_origin
 
 
 def decorating(x: str, command: int | str = 30, default: int | str = '0;37') -> str:
@@ -98,19 +99,21 @@ def str_type(t, origin: bool = False) -> str:
     Returns:
         string of type t
     """
-    type_str = str(t).split("'")[1]
-    if t is list:
-        return decorating("list", 34)
-    elif t is tuple:
-        return decorating("tuple", 34)
+    origin_type = type(t)
+    
+    if origin_type is list:
+        return decorating(f"list<{str_type(t[0])}", 34) + decorating(f">", 34)
+    elif origin_type is tuple:
+        return decorating("tuple<", 34) + ", ".join([str_type(nt) for nt in t]) + decorating(">", 34)
+    elif origin_type is dict:
+        k, v = list(t.items())[0]
+        return decorating("dict<", 34) + str_type(k) + " -> " + str_type(v) + decorating(">", 34)
     elif t in [int, float, bool]:
-        return decorating(type_str, 36)
+        return decorating(str(t).split("'")[1], 36)
     elif t is str:
-        return decorating(type_str, 33)
+        return decorating(str(t).split("'")[1], 33)
     else:
-        type_str = type_str.split('.')[-1]
-        if not origin:
-            type_str = decorating(type_str, '30;47')
+        type_str = str(t).split("'")[1].split('.')[-1]
     return type_str
 
 
