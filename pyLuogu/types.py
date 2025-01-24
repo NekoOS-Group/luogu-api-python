@@ -336,6 +336,20 @@ class ProblemSettings(LuoguType):
         "\n## 输入格式\n" + str(self.inputFormat) + \
         "\n## 输出格式\n" + str(self.outputFormat) + \
         "\n## 数据范围与提示\n" + str(self.hint)
+    
+    def append_tags(self, tags: List[int] | int ):
+        if isinstance(tags, int):
+            tags = [tags]
+        for tag in tags:
+            if tag not in self.tags:
+                self.tags.append(tag)
+
+    def remove_tags(self, tags: List[int] | int):
+        if isinstance(tags, int):
+            tags = [tags]
+        for tag in self.tags:
+            if tag in self.tags:
+                self.tags.remove(tag)
 
 class TestCaseSettings(LuoguType):
     __type_dict__ = {

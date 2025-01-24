@@ -41,18 +41,20 @@ class JsonSerializable:
                     raise TypeError(f"List type must have exactly one element type: {_expected_type}")
                 inner_type = _expected_type[0]
                 if not isinstance(_value, list):
-                    raise TypeError(f"Expected a list of {inner_type}, got {type(_value)}")
+                    raise TypeError(f"{_key} Expected a list of {inner_type}, got {type(_value)}")
                 return [handle_nested_type(None, v, inner_type) for v in _value]
 
             elif isinstance(_expected_type, tuple):
                 if not isinstance(_value, (list, tuple)) or len(_value) != len(_expected_type):
-                    raise TypeError(f"Expected a tuple of {_expected_type}, got {type(_value)} with value {_value}")
+                    raise TypeError(f"{_key} Expected a tuple of {_expected_type}, got {type(_value)} with value {_value}")
                 return tuple(handle_nested_type(None, v, t) for v, t in zip(_value, _expected_type))
 
             elif isinstance(_expected_type, dict):
-                if not isinstance(_value, dict):
-                    raise TypeError(f"Expected a dict of {_expected_type}, got {type(_value)}")
+                if not isinstance(_value, dict) and not isinstance(_value, list):
+                    raise TypeError(f"{_key} Expected a dict of {_expected_type}, got {type(_value)}")
                 key_type, val_type = list(_expected_type.items())[0]
+                if isinstance(_value, list):
+                    return {handle_nested_type(None, key_type(k), key_type): handle_nested_type(None, v, val_type) for k, v in enumerate(_value)}
                 return {handle_nested_type(None, k, key_type): handle_nested_type(None, v, val_type) for k, v in _value.items()}
 
             elif issubclass(_expected_type, JsonSerializable):

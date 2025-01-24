@@ -31,7 +31,11 @@ class luoguAPI:
         param_final = None if params is None else params.to_json()
         data_final = None if data is None else json.dumps(data)
 
-        logger.info(f"Sending {method} request to {url}")
+        if method == "GET":
+            logger.info(f"GET from {url} with params: {param_final}")
+        else:
+            payload_str = data_final if len(data_final) < 50 else f"{data_final[:50]}..."
+            logger.info(f"POST to {url} with payload: {payload_str}")
 
         def _parse_response(_response: requests.Response) -> dict:
             try:
@@ -75,7 +79,7 @@ class luoguAPI:
                     error_message = response.json().get("currentData").get("errorMessage")
                     raise ForbiddenError( error_message or "Forbidden" )
                 
-                if response.json().get("code") == 404:
+                if response.json().get("code") in [404, 418]:
                     raise NotFoundError(f"Resource not found{endpoint}")
 
                 return _parse_response(response)
@@ -230,9 +234,7 @@ class luoguAPI:
             self, pid: str,
     ) -> ProblemSettingsRequestResponse:
         res = self._send_request(endpoint=f"problem/edit/{pid}")
-
-        print(res["subtaskScoringStrategies"])
-
+        
         res["problemDetails"] = res["problem"]
         res["problemSettings"] = res["setting"]
         res["problemSettings"]["comment"] = res["problem"]["comment"]
