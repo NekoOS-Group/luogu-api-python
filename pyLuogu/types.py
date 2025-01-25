@@ -347,7 +347,7 @@ class ProblemSettings(LuoguType):
     def remove_tags(self, tags: List[int] | int):
         if isinstance(tags, int):
             tags = [tags]
-        for tag in self.tags:
+        for tag in tags:
             if tag in self.tags:
                 self.tags.remove(tag)
 
