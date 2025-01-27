@@ -80,7 +80,7 @@ class luoguAPI:
                     raise ForbiddenError( error_message or "Forbidden" )
                 
                 if response.json().get("code") in [404, 418]:
-                    raise NotFoundError(f"Resource not found{endpoint}")
+                    raise NotFoundError(f"Resource not found {endpoint}")
 
                 return _parse_response(response)
             except requests.HTTPError as e:
@@ -347,6 +347,12 @@ class luoguAPI:
         res = self._send_request(endpoint=f"user/{uid}")
 
         return UserDataRequestResponse(res)
+
+    def search_user(self, keyword: str) -> List[UserSummary]:
+        params = UserSearchRequestParams({"keyword" : keyword})
+        
+        res = self._send_request(endpoint="api/user/search", params=params)
+        return [UserSummary(user) for user in res["users"]]
 
     def me(self) -> UserDetails:
         return self.get_user(self.cookies["_uid"].split("_")[0]).user

@@ -93,7 +93,7 @@ Methods of class `LuoguAPI`
    - [ ] upload_testcases
  - [x] User
    - [x] get_user
-   - [ ] search_user
+   - [x] search_user
    - [ ] get_user_setting
    - [ ] update_user_setting
    - [ ] get_user_followings_list

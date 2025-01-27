@@ -37,4 +37,6 @@ def set_log_level(level: typing.Literal["DEBUG", "INFO", "WARNING", "ERROR", "CR
 set_log_level("WARNING")
 
 from .api import luoguAPI
+from .async_api import asyncLuoguAPI
+from .static_api import staticLuoguAPI, luogu
 from .types import *

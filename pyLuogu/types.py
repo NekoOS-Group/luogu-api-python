@@ -96,6 +96,11 @@ class ProblemRequestParams(RequestParams):
         "contest_id": int
     }
 
+class UserSearchRequestParams(RequestParams):
+    __type_dict__ = {
+        "keyword": str
+    }
+
 class ProblemSummary(LuoguType):
     __type_dict__ = {
         "pid": str,

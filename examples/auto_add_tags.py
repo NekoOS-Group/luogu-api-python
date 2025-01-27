@@ -11,7 +11,11 @@ luogu = pyLuogu.luoguAPI(cookies=cookies)
 tag = luogu.get_tags().tags
 
 tabel = {
+    "清华集训" : "清华集训",
+    "THUWC": "THUWC",
+    "THUSC": "THUSC",
     "POI"  : "POI（波兰）",
+    "PA"   : "PA（波兰）",
     "ICPC"  : "ICPC",
     "SEERC" : "ICPC",
     "NEERC" : "ICPC",
@@ -29,7 +33,6 @@ tabel = {
     "KOI"  : "KOI（韩国）",
     "RMI"  : "RMI（罗马尼亚）",
     "NOISG" : "NOISG（新加坡）",
-    "PA"   : "PA（波兰）",
     "CEOI" : "CEOI（中欧）",
     "ROI"  : "ROI（俄罗斯）",
     "ROIR" : "ROIR（俄罗斯）",
@@ -50,9 +53,7 @@ def add_tag(keyword: str, page: int):
     for problem in luogu.get_problem_list(keyword=keyword, page=page).problems:
         problem.title = problem.title.replace("「", "[").replace("」", "]")
         match = re.search(rf'\[({keyword})\s?(\d+)\s?[/-]?(\d+)?\s?([Dd]ay\s?\d+)?\s?(.+)?\]\s?(.+)', problem.title)
-        if match:
-            content_name = keyword 
-            
+        if match:            
             content_name, year_number, year_number_cond, day_number, additional_message, real_title = match.groups()
 
             # print(f"{content_name} {year_number} {year_number_cond} {day_number} {additional_message} {real_title}")    
@@ -122,6 +123,6 @@ def add_tag(keyword: str, page: int):
 
 for keyword in tabel.keys():
     meta = luogu.get_problem_list(keyword=keyword)
-    pages = (meta.count + 49) // meta.perPage
+    pages = (meta.count + meta.perPage - 1) // meta.perPage
     for i in range(1, pages + 1):
         add_tag(keyword, i)
