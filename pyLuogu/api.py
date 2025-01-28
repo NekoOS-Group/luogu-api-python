@@ -68,9 +68,9 @@ class luoguAPI:
                 raise RequestError("Request error")
 
             try:
-                response.raise_for_status()
+                logger.debug(f"{json.dumps(response.json())}")
 
-                logger.debug(f"Response: {response.text}")
+                response.raise_for_status()
 
                 if response.json().get("currentTemplate") == "AuthLogin":
                     raise AuthenticationError("Need Login")
@@ -87,6 +87,12 @@ class luoguAPI:
                 if response.status_code == 401:
                     raise AuthenticationError("Authentication failed") from e
                 elif response.status_code == 403:
+                    print(response.json().get("errorMessage"))
+                    if response.json().get("请求频繁，请稍候再试"):
+                        time.sleep(5)
+                        continue
+                    if response.json().get("errorMessage") == "user.not_self":
+                        raise AuthenticationError("not yourself")
                     logger.warning("CSRF token expired, refreshing token...")
                     self._get_csrf()
                     headers = self._get_headers(method)  # Refresh headers with new CSRF token
@@ -348,6 +354,26 @@ class luoguAPI:
 
         return UserDataRequestResponse(res)
 
+    def get_user_info(self, uid: int) -> UserDetails:
+        res = self._send_request(endpoint=f"api/user/info/{uid}")
+
+        return UserDetails(res["user"])
+    
+    def get_user_following_list(self, uid: int, page: int | None = None) -> List[UserDetails]:
+        params = UserListRequestParams(json={"user": uid, "page": page})
+        res = self._send_request(endpoint=f"api/user/followings", params=params)
+        return [UserDetails(user) for user in res["users"]["result"]]
+
+    def get_user_follower_list(self, uid: int, page: int | None = None) -> List[UserDetails]:
+        params = UserListRequestParams(json={"user": uid, "page": page})
+        res = self._send_request(endpoint=f"api/user/followers", params=params)
+        return [UserDetails(user) for user in res["users"]["result"]]
+
+    def get_user_blacklist(self, uid: int, page: int | None = None) -> List[UserDetails]:
+        params = UserListRequestParams(json={"user": uid, "page": page})
+        res = self._send_request(endpoint=f"api/user/blacklist", params=params)
+        return [UserDetails(user) for user in res["users"]["result"]]
+    
     def search_user(self, keyword: str) -> List[UserSummary]:
         params = UserSearchRequestParams({"keyword" : keyword})
         

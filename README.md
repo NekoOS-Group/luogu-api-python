@@ -93,18 +93,18 @@ Methods of class `LuoguAPI`
    - [ ] upload_testcases
  - [x] User
    - [x] get_user
+   - [x] get_user_info
+   - [x] get_user_followings_list
+   - [x] get_user_followers_list
+   - [x] get_user_blacklist
    - [x] search_user
-   - [ ] get_user_setting
-   - [ ] update_user_setting
-   - [ ] get_user_followings_list
-   - [ ] get_user_followers_list
-   - [ ] get_user_blacklist
  - [x] UserOperation
    - [ ] login
    - [ ] logout
    - [x] me
    - [ ] submit_code
    - [x] get_created_problem_list
+   - [ ] update_setting
  - [x] Miscs
    - [x] get_tags
 

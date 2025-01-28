@@ -48,6 +48,13 @@ class ProblemSetListRequestParams(ListRequestParams):
         "type": str
     }
 
+class UserListRequestParams(ListRequestParams):
+    __type_dict__ = {
+        "user": int,
+        "page": int,
+        "orderBy": int
+    }
+
 class RecordListRequestParams(ListRequestParams):
     __type_dict__ = {
         "page": int,
@@ -130,17 +137,17 @@ class ProblemSummary(LuoguType):
 
 class UserSummary(LuoguType):
     __type_dict__ = {
-        "uid": int,  # 用户 ID
-        "name": str,  # 用户名
-        "avatar": str,  # 用户头像 URL
-        "slogan": str,  # 用户口号（可选）
-        "badge": str,  # 用户徽章（可选）
-        "isAdmin": bool,  # 是否为管理员
-        "isBanned": bool,  # 是否被封禁
-        "color": str,  # 用户颜色标记
-        "ccfLevel": int,  # 用户 CCF 等级
-        "background": str,  # 用户背景信息（可选）
-        "isRoot": bool,  # 是否为根用户（可选）
+        "uid": int, 
+        "name": str,
+        "avatar": str, 
+        "slogan": str, 
+        "badge": str, 
+        "isAdmin": bool, 
+        "isBanned": bool, 
+        "isRoot": bool, 
+        "color": str, 
+        "ccfLevel": int, 
+        "background": str, 
     }
     uid: int
     name: str
@@ -156,11 +163,10 @@ class UserSummary(LuoguType):
 
 class TeamSummary(LuoguType):
     __type_dict__ = {
-        "id": int,         # 团队 ID
-        "name": str,       # 团队名称
-        "isPremium": bool  # 是否为高级团队
+        "id": int,
+        "name": str,
+        "isPremium": bool
     }
-
     id: int
     name: str
     isPremium: bool
@@ -375,32 +381,29 @@ class UserDetails(UserSummary):
         "followerCount": int,
         "ranking": int,
         "eloValue": int,
-        "blogAddress": str,
         # "rating": 'Rating',
         "registerTime": int,
         "introduction": str,
         #"prize": List[Dict[str, Union[str, int]]],
         # "elo": 'EloRatingSummary'
-    }
-    followingCount: int
-    followerCount: int
-    ranking: int
-    eloValue: int
-    blogAddress: str
-    # rating: Rating
-    registerTime: int
-    introduction: str
-    # prize: List[Dict[str, Union[str, int]]]
-    # elo: 'EloRatingSummary'
-
-class UserStats(LuoguType):
-    __type_dict__ = {
         "userRelationship": int,
         "reverseUserRelationship": int,
         "passedProblemCount": int,
         "submittedProblemCount": int
     }
-    # ...existing fields...
+    followingCount: int
+    followerCount: int
+    ranking: int
+    eloValue: int
+    # rating: Rating
+    registerTime: int
+    introduction: str
+    # prize: List[Dict[str, Union[str, int]]]
+    # elo: 'EloRatingSummary'
+    userRelationship: int
+    reverseUserRelationship: int
+    passedProblemCount: int
+    submittedProblemCount: int
 
 class SelfDetails(LuoguType):
     __type_dict__ = {
