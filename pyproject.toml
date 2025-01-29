@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "luogu-api-python"
+version = "0.0.2-rc"
+description = "A Python library to interact with the Luogu online judge system"
+readme = "README.md"
+authors = [
+    { name = "bzy", email = "bzy.cirno@gmail.com" },
+    { name = "camber", email = "camber@poi.science" }
+]
+license = { file = "LICENSE" }
+dependencies = [
+    "requests",
+    "aiohttp",
+    "beautifulsoup4"
+]
+requires-python = ">=3.7"
+
+[tool.setuptools]
+packages = ["pyLuogu"]
+
+[project.optional-dependencies]
+dev = [
+    "openai"
+]

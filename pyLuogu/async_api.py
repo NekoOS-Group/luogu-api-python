@@ -116,12 +116,12 @@ class asyncLuoguAPI:
 
             except (aiohttp.ClientError, asyncio.TimeoutError) as e:  # Only catch connection-related errors
                 logger.warning(f"Attempt {attempt + 1}: Connection error - {e}")
-                if isinstance(e, (aiohttp.ClientTimeout, aiohttp.ClientConnectionError)):
+                if isinstance(e, (aiohttp.ClientTimeout, aiohttp.ClientConnectionError, asyncio.TimeoutError)):
                     await asyncio.sleep(1)
                     continue
                 raise RequestError("Connection error") from e
 
-            async with response:
+            async with response:    
                 result = await _handle_response(response, attempt)
                 if result is None:  # Need to retry
                     headers = await self._get_headers(method)
