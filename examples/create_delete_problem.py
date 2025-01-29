@@ -8,7 +8,7 @@ res = luogu.get_created_problem_list()
 print(f"The number of your created problem : {res.count}")
 
 settings = ProblemSettings.get_default()
-settings.title = "Neko Cooperation"
+settings.title = "Neko Cx`xooperation"
 
 res = luogu.create_problem(settings=settings)
 pid = res.pid

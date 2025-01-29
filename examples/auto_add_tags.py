@@ -11,12 +11,25 @@ luogu = pyLuogu.luoguAPI(cookies=cookies)
 tag = luogu.get_tags().tags
 
 tabel = {
+    "THUSCH" : "THUSC",
+    "IOI" : "IOI",
+    "HUSTFC" :  "高校校赛",
+    "CCPC"  : "XCPC",
+    "GDCPC" : "XCPC",
+    "SDCPC" : "XCPC",
+    "GDKOI 2024" : "广东",
+    "XJTUPC"  : "高校校赛",
+    "UESTCPC" : "高校校赛",
+    "SHUPC"   : "高校校赛",
+    "JOISC" : "JOI（日本）",
+    "集训队互测" : "集训队互测",
     "清华集训" : "清华集训",
     "THUWC": "THUWC",
     "THUSC": "THUSC",
     "POI"  : "POI（波兰）",
     "PA"   : "PA（波兰）",
     "ICPC"  : "ICPC",
+    "CERC"  : "ICPC",
     "SEERC" : "ICPC",
     "NEERC" : "ICPC",
     "NWRRC" : "ICPC",
@@ -82,15 +95,12 @@ def add_tag(keyword: str, page: int):
                 ignore = False
                 new_tags.append(search_tag(content_name_tag).id)
 
-            if problem.tags is None or search_tag(year_number).id not in problem.tags:
+            year_tag = search_tag(year_number)
+            year_tag_id = None if year_tag is None else year_tag.id
+            if problem.tags is None or (year_tag_id is not None and year_tag_id not in problem.tags):
                 print(f" - Adding tag '{year_number}' to {problem.title}")
                 ignore = False
-                new_tags.append(search_tag(year_number).id)
-
-            if content_name == "COI" and search_tag("COCI（克罗地亚）").id in problem.tags:
-                print(f" - Removing tag 'COCI' from {problem.title}")
-                ignore = False
-                remove_tags.append(search_tag("COCI（克罗地亚）").id)
+                new_tags.append(year_tag_id)
 
             if year_number_cond is not None and search_tag(year_number_cond).id in problem.tags:
                 print(f" - Removing tag '{year_number_cond}' from {problem.title}")

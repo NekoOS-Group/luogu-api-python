@@ -1,4 +1,5 @@
 setuptools
 wheel
 requests
+aiohttp
 beautifulsoup4

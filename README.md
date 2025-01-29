@@ -104,9 +104,13 @@ Methods of class `LuoguAPI`
    - [x] me
    - [ ] submit_code
    - [x] get_created_problem_list
+   - [ ] get_created_problemset_list
+   - [ ] get_created_content_list
    - [ ] update_setting
  - [x] Miscs
    - [x] get_tags
+   - [ ] get_captcha
+   - [ ] sign_up
 
 Others
 
