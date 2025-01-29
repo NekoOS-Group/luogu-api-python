@@ -10,7 +10,16 @@ from .types import *
 from .errors import *
 from . import logger
 
+__COMMON_UA = "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:133.0) Gecko/20100101 Firefox/133."
+
 class luoguAPI:
+    """ Luogu API interface interacting via Requests
+
+    Attributes:
+        base_url (str): The base URL for the Luogu API. Defaults to "https://www.luogu.com.cn".
+        cookies (LuoguCookies or None)
+
+    """
     def __init__(
             self,
             base_url="https://www.luogu.com.cn",
