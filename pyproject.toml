@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "luogu-api-python"
-version = "0.0.2-rc"
+version = "0.0.2"
 description = "A Python library to interact with the Luogu online judge system"
 readme = "README.md"
 authors = [

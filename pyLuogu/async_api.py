@@ -373,12 +373,10 @@ class asyncLuoguAPI:
         
     async def get_user(self, uid: int) -> UserDataRequestResponse:
         res = await self._send_request(endpoint=f"user/{uid}")
-
         return UserDataRequestResponse(res)
 
     async def get_user_info(self, uid: int) -> UserDetails:
         res = await self._send_request(endpoint=f"api/user/info/{uid}")
-
         return UserDetails(res["user"])
     
     async def get_user_following_list(self, uid: int, page: int | None = None) -> List[UserDetails]:
@@ -398,7 +396,6 @@ class asyncLuoguAPI:
     
     async def search_user(self, keyword: str) -> List[UserSummary]:
         params = UserSearchRequestParams({"keyword" : keyword})
-        
         res = await self._send_request(endpoint="api/user/search", params=params)
         return [UserSummary(user) for user in res["users"]]
 

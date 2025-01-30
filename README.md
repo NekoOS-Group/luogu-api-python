@@ -1,5 +1,5 @@
 # luogu-api-python
-A Python implementation of the Luogu API
+A Python implementation of the Luogu API.
 
 ## Project Description
 
@@ -30,6 +30,8 @@ To install the package from source, follow these steps:
 
 ## Usage
 
+### Synchronous API
+
 Here is an example of how to use the package:
 
 ```python
@@ -43,6 +45,28 @@ problems = luogu.get_problem_list().problems
 for problem in problems:
     print(problem.title)
 ```
+
+### Asynchronous API (Experimental)
+
+The package also provides experimental support for async operations:
+
+```python
+import asyncio
+import pyLuogu
+
+# Initialize the async API without cookies
+luogu = pyLuogu.asyncLuoguAPI()
+
+async def main():
+    async with luogu:
+        problems = (await luogu.get_problem_list()).problems
+        for problem in problems:
+            print(problem.title)
+
+asyncio.run(main())
+```
+
+Note: The async API is currently experimental and subject to changes.
 
 ## Contributing
 
@@ -77,42 +101,64 @@ If you find a bug or have a feature request, please open an issue on GitHub. Pro
 
 ## Todo List
 
-Methods of class `LuoguAPI`
+API Implementation Status
 
- - [x] Problem
-   - [x] get_problem_list
-   - [x] get_team_problem_list 
-   - [x] get_problem
-   - [x] get_problem_settings
-   - [x] update_problem_settings
-   - [x] update_testcases_settings
-   - [x] create_problem
-   - [x] delete_problem
-   - [x] transfer_problem
-   - [ ] download_testcases
-   - [ ] upload_testcases
- - [x] User
-   - [x] get_user
-   - [x] get_user_info
-   - [x] get_user_followings_list
-   - [x] get_user_followers_list
-   - [x] get_user_blacklist
-   - [x] search_user
- - [x] UserOperation
-   - [ ] login
-   - [ ] logout
-   - [x] me
-   - [ ] submit_code
-   - [x] get_created_problem_list
-   - [ ] get_created_problemset_list
-   - [ ] get_created_content_list
-   - [ ] update_setting
- - [x] Miscs
-   - [x] get_tags
-   - [ ] get_captcha
-   - [ ] sign_up
+### Core APIs
 
-Others
+- [x] Problem API
+  - [x] get_problem_list
+  - [x] get_team_problem_list 
+  - [x] get_problem
+  - [x] get_problem_settings
+  - [x] update_problem_settings
+  - [x] update_testcases_settings
+  - [x] create_problem
+  - [x] delete_problem
+  - [x] transfer_problem
+  - [ ] download_testcases
+  - [ ] upload_testcases
 
- - [ ] asyncLuoguAPI
- - [ ] staticLuoguAPI
+- [x] User API
+  - [x] get_user
+  - [x] get_user_info
+  - [x] get_user_followings_list
+  - [x] get_user_followers_list
+  - [x] get_user_blacklist
+  - [x] search_user
+
+- [-] User Operations
+  - [ ] login
+  - [ ] logout
+  - [x] me
+  - [ ] submit_code
+  - [x] get_created_problem_list
+  - [ ] get_created_problemset_list
+  - [ ] get_created_content_list
+  - [ ] update_setting
+
+- [-] Miscellaneous
+  - [x] get_tags
+  - [ ] get_captcha
+  - [ ] sign_up
+
+### Alternative API Implementations
+
+- [x] asyncLuoguAPI (Experimental)
+  - [x] Async versions of all implemented core APIs
+  - [ ] Performance optimizations
+  - [ ] Comprehensive error handling
+
+- [ ] staticLuoguAPI
+  - [ ] Initial implementation
+  - [ ] Documentation
+
+### Test Cases and Documentation
+
+Note: Test suite and documentation are planned for implementation after API features are stabilized. This includes:
+
+- Comprehensive test coverage for both sync and async APIs
+- API reference documentation with examples
+- Integration test scenarios
+- Development guides and best practices
+
+These will be prioritized once the core functionality reaches a stable state.
