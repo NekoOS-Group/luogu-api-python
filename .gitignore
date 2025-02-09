@@ -138,3 +138,4 @@ dmypy.json
 .DS_Store
 release
 examples/test_api.py
+luogu-api.d.ts

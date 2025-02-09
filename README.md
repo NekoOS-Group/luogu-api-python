@@ -112,6 +112,18 @@ API Implementation Status
   - [ ] download_testcases
   - [ ] upload_testcases
 
+- [x] Problem Set API
+  - [x] get_problem_set
+
+- [x] Contest API
+  - [x] get_contest
+
+- [x] Discussion API
+  - [ ] get_discussion (failed to parse)
+
+- [x] Activity(benben) API
+  - [x] get_activity
+
 - [x] User API
   - [x] get_user
   - [x] get_user_info

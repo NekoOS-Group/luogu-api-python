@@ -1,4 +1,4 @@
-from typing import List, Tuple, Literal, Dict, Union, Optional
+from typing import List, Tuple, Literal, Dict, Union, Optional, Any
 
 ProblemType = Literal["P", "U", "T", "B", "CF", "AT", "UVA", "SP"]
 TransferProblemType = Literal["P", "U", "B"] | int
@@ -113,6 +113,14 @@ class DiscussionRequestParams(RequestParams):
         "page": int,
         "orderBy": int
     }
+
+class ActivityReuqestParams(RequestParams):
+    __type_dict__ = {
+        "user": int,
+        "page": int
+    }
+    user: int
+    page: int
 
 class ProblemSummary(LuoguType):
     __type_dict__ = {
@@ -422,6 +430,122 @@ class SelfDetails(LuoguType):
     }
     # ...existing fields...
 
+class ProblemSet(LuoguType):
+    __type_dict__ = {
+        "createTime": int,
+        "deadline": int,
+        "problemCount": int,
+        "marked": bool,
+        "markCount": int,
+        "id": int,
+        "title": str,
+        "type": int,
+        "provider": Provider
+    }
+    createTime: int
+    deadline: Optional[int]
+    problemCount: int
+    marked: bool
+    markCount: int
+    id: int
+    title: str
+    type: int
+    provider: Provider
+
+class ProblemSetDetails(ProblemSet):
+    __type_dict__ = {
+        **ProblemSet.__type_dict__,
+        "description": str,
+        "problems": [ProblemSummary],
+        # "userScore": Optional[Dict[str, Union[UserSummary, int, Dict[str, Optional[int]], Dict[str, bool]]]],
+    }
+    description: str
+    problems: List[ProblemSummary]
+    # userScore: Optional[Dict[str, Union[UserSummary, int, Dict[str, Optional[int]], Dict[str, bool]]]]
+
+class ContestSummary(LuoguType):
+    __type_dict__ = {
+        "id": int,
+        "name": str,
+        "startTime": int,
+        "endTime": int,
+    }
+    id: int
+    name: str
+    startTime: int
+    endTime: int
+    
+class ContestDetails(ContestSummary):
+    __type_dict__ = {
+        **ContestSummary.__type_dict__,
+        "description": str,
+        "totalParticipants": int,
+        "eloDone": bool,
+        "canEdit": bool,
+        "ruleType": int,
+        "visibilityType": int,
+        "invitationCodeType": int,
+        "rated": bool,
+        "eloThreshold": int,
+        "problemCount": int,
+        "problems": [ProblemSummary],
+        "isScoreboardFrozen": bool,
+        "host": Provider,
+    }
+    description: str
+    totalParticipants: int
+    eloDone: bool
+    canEdit: bool
+    ruleType: int
+    visibilityType: int
+    invitationCodeType: int
+    isScoreboardFrozen: bool
+    rated: bool
+    eloThreshold: Optional[int]
+    problemCount: int
+    problems: List[ProblemSummary]
+    host: Provider
+
+class ContestSettings(LuoguType):
+    __type_dict__ = {
+        "name": str,
+        "description": str,
+        "visibilityType": int,
+        "invitationCodeType": int,
+        "ruleType": int,
+        "startTime": int,
+        "endTime": int,
+        "rated": bool,
+        "ratingGroup": str,
+        "eloThreshold": int,
+        "eloCenter": int,
+    }
+    name: str
+    description: str
+    visibilityType: int
+    invitationCodeType: int
+    ruleType: int
+    startTime: int
+    endTime: int
+    rated: bool
+    ratingGroup: Optional[str]
+    eloThreshold: Optional[int]
+    eloCenter: Optional[int]
+
+class Activity(LuoguType):
+    __type_dict__ = {
+        "content": str,
+        "id": int,
+        "type": int,
+        "time": int,
+        "user": UserSummary
+    }
+    content: str
+    id: int
+    type: int
+    time: int
+    user: UserSummary
+
 class TagDetail(LuoguType):
     __type_dict__ = {
         "id": int,
@@ -459,21 +583,24 @@ class ProblemListRequestResponse(Response):
 class ProblemDataRequestResponse(LuoguType):
     __type_dict__ = {
         "problem": ProblemDetails,
-        # "contest": ContestSummary,
+        "contest": ContestSummary,
         # "discussions": [LegacyPostSummary],
         "bookmarked": bool,
         "vjudgeUsername": str,
-        # "recommendations": [LegacyProblemSummary], 
+        "recommendations": [ProblemSummary], 
         "lastLanguage": int,
         "lastCode": str,
         "privilegedTeams": [TeamSummary],
         "userTranslation": str,
     }
     problem: ProblemDetails
+    contest: ContestSummary
     bookmarked: bool
     vjudgeUsername: str
+    recommendations: List[ProblemSummary]
     lastLanguage: int
     lastCode: str
+    privilegedTeams: List[TeamSummary]
     userTranslation: str
 
 class ProblemSettingsRequestResponse(Response):
@@ -514,6 +641,34 @@ class UpdateTestCasesSettingsResponse(Response):
     scoringStrategy: ScoringStrategy
     subtaskScoringStrategies: Dict[str, ScoringStrategy]
 
+class ProblemSetDataRequestResponse(Response):
+    __type_dict__ = {
+        "training": ProblemSetDetails,
+        # "trainingProblems": {
+        #    "result": List[List[Any]],
+        #    "perPage": type(None),
+        #    "count": int
+        # },
+        "canEdit": bool,
+        "privilegedTeams": [TeamSummary]
+    }
+    training: ProblemSetDetails
+    # trainingProblems: Dict[str, Union[List[List[Any]], None, int]]
+    canEdit: bool
+    privilegedTeams: List[TeamSummary]
+
+class ContestDataRequestResponse(Response):
+    __type_dict__ = {
+        "contest": ContestDetails,
+        "joined": bool,
+        "accessLevel": int,
+        # "userElo": EloRatingSummary
+        # "userScore" : Optional[Dict[str, Union[UserSummary, int, Dict[str, Optional[int]], Dict[str, bool]]]]
+    }
+    contest : ContestDetails
+    joined : bool
+    accessLevel : int
+
 class UserDataRequestResponse(LuoguType):
     __type_dict__ = {
         "user": UserDetails,
@@ -528,8 +683,87 @@ class UserDataRequestResponse(LuoguType):
     submittedProblems: List['ProblemSummary']
     # teams: Optional[List[Dict[str, Union['TeamSummary', 'Group', 'UserSummary', int]]]]
 
+class Forum(LuoguType):
+    __type_dict__ = {
+        "name": str,
+        "type": int,
+        "slug": str,
+        "color": str,
+    }
+    name: str
+    type: int
+    slug: str
+    color: str
+
+class Reply(LuoguType):
+    __type_dict__ = {
+        "id": int,
+        "content": str,
+        "time": int,
+        "author": UserSummary,
+    }
+    id: int
+    content: str
+    author: UserSummary
+    time: int
+
+class PostSummary(LuoguType):
+    __type_dict__ = {
+        "id": int,
+        "title": str,
+        "author": UserSummary,
+        "createTime": int,
+        "updateTime": int,
+        "forum": Forum,
+        "topped": bool,
+        "valid": bool,
+        "locked": bool,
+        "replyCount": int,
+        # "recentReply": Reply | bool,
+    }
+    id: int
+    title: str
+    content: str
+    author: UserSummary
+    createTime: int
+    updateTime: int
+    forum: Forum
+    topped: bool
+    valid: bool
+    locked: bool
+    replyCount: int
+    # recentReply: Union[Reply, bool]
+
+class Post(PostSummary):
+    __type_dict__ = {
+        **PostSummary.__type_dict__,
+        "pinnedReply": Reply,
+        "content": str
+    }
+    pinnedReply: None
+    content: str
+
 class DiscussionRequestResponse(Response):
-    pass
+    __type_dict__ = {
+        "forum": Forum,
+        "post": Post,
+        "replies": [Reply],
+        "canReply": bool,
+    }
+    forum: Forum
+    post: Post
+    replies: List[Reply]
+    canReply: bool
+
+class ActivityRequestResponse(Response):
+    __type_dict__ = {
+        "activities": [Activity],
+        "count": int,
+        "perPage": int,
+    }
+    activities: List[Activity]
+    count: int
+    perPage: int
 
 class TagRequestResponse(Response):
     __type_dict__ = {

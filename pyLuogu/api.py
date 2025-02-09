@@ -1,6 +1,7 @@
 import json
 import time
-import httpx
+     
+import requests
 import bs4
 
 from .types import *
@@ -11,18 +12,11 @@ class luoguAPI:
     def __init__(
             self,
             base_url="https://www.luogu.com.cn",
-            cookies: LuoguCookies = None,
-            timeout: float | httpx.Timeout | None = 10,
-            max_retries: int = 5
+            cookies: LuoguCookies = None
     ):
         self.base_url = base_url
         self.cookies = None if cookies is None else cookies.to_json()
-        self.max_retries = max_retries
-        self.client = httpx.Client(
-            timeout=timeout,
-            cookies=self.cookies,
-            follow_redirects=True,
-        )
+        self.session = requests.Session()
         self.x_csrf_token = None
 
     def _send_request(
@@ -35,44 +29,54 @@ class luoguAPI:
         url = f"{self.base_url}/{endpoint}"
         headers = self._get_headers(method)
         param_final = None if params is None else params.to_json()
-        json_data = None if data is None else data
-
-        request : httpx.Request = self.client.build_request(
-            method, url,
-            headers=headers,
-            params=param_final,
-            json=json_data,
-        )
+        data_final = None if data is None else json.dumps(data)
 
         if method == "GET":
             logger.info(f"GET from {url} with params: {param_final}")
         else:
-            payload_str = json.dumps(json_data) if json_data and len(json.dumps(json_data)) < 50 else f"{json.dumps(json_data)[:50]}..."
+            payload_str = data_final if len(data_final) < 50 else f"{data_final[:50]}..."
             logger.info(f"POST to {url} with payload: {payload_str}")
-        
-        def _parse_response(response: httpx.Response) -> dict:
+
+        def _parse_response(_response: requests.Response) -> dict:
             try:
-                ret = res_json
-                return ret if ret.get("currentData") is None else ret["currentData"]
+                ret = _response.json()
+                if ret.get("currentData") is None:
+                    return ret
+                return ret["currentData"]
             except json.JSONDecodeError as e:
                 logger.error(f"JSON decode error: {e}")
-                raise RequestError("JSON decode error") from e
+                raise
 
-        for attempt in range(self.max_retries):
+        for attempt in range(5):
             try:
-                response = self.client.send(request)
-            except httpx.TimeoutException as e:
+                response = self.session.request(
+                    method, url,
+                    headers=headers,
+                    params=param_final,
+                    data=data_final,
+                    cookies=self.cookies,
+                    timeout=5
+                )
+            except (requests.ConnectTimeout, requests.exceptions.ReadTimeout) as e:
                 logger.warning(f"Attempt {attempt + 1}: Timeout error - {e}")
                 time.sleep(1)
                 continue
-            except httpx.HTTPError as e:
+            except requests.RequestException as e:
                 logger.error(f"Request error: {e}")
                 raise RequestError("Request error") from e
+            except:
+                raise RequestError("Request error")
 
             try:
                 response.raise_for_status()
-                res_json = response.json()
-                logger.debug(f"response :\n{json.dumps(res_json, indent=2)}")
+
+                try:
+                    res_json = response.json()
+                except json.JSONDecodeError:
+                    logger.error(f"Failed to decode JSON response: {response.text}")
+                    raise RequestError("Failed to decode JSON response") from None
+                
+                logger.debug(f"{json.dumps(res_json)}")
 
                 if res_json.get("currentTemplate") == "AuthLogin":
                     raise AuthenticationError("Need Login")
@@ -85,7 +89,7 @@ class luoguAPI:
                     raise NotFoundError(f"Resource not found {endpoint}")
 
                 return _parse_response(response)
-            except httpx.HTTPStatusError as e:
+            except requests.HTTPError as e:
                 if response.status_code == 401:
                     raise AuthenticationError("Authentication failed") from e
                 elif response.status_code == 403:
@@ -135,7 +139,7 @@ class luoguAPI:
 
         for attempt in range(5):
             try:
-                response = self.client.get(
+                response = self.session.get(
                     f"{self.base_url}/{endpoint}", 
                     headers=headers, 
                     cookies=self.cookies
@@ -151,15 +155,15 @@ class luoguAPI:
                     return
                 else:
                     logger.warning("CSRF token not found, retrying...")
-                    self.get_problem(pid="P1000") # refresh the client
+                    self.get_problem(pid="P1000") # refresh the session
                     time.sleep(1)
-            except (httpx.TimeoutException) as e:
+            except (requests.ConnectTimeout, requests.exceptions.ReadTimeout) as e:
                 logger.warning(f"Attempt {attempt + 1}: Timeout error - {e}")
                 time.sleep(1)
-            except httpx.HTTPError as e:
+            except requests.HTTPError as e:
                 logger.error(f"HTTP error: {e}")
                 raise
-            except httpx.RequestError as e:
+            except requests.RequestException as e:
                 logger.error(f"Request error: {e}")
                 raise
 
@@ -389,17 +393,38 @@ class luoguAPI:
     def me(self) -> UserDetails:
         return self.get_user(self.cookies["_uid"].split("_")[0]).user
 
+    def get_problem_set(self, id: int) -> ProblemSetDataRequestResponse:
+        res = self._send_request(endpoint=f"/training/{id}")
+        res["training"]["problems"] = [x.get("problem") for x in res["training"]["problems"]]
+        return ProblemSetDataRequestResponse(res)
+    
+    def get_contest(self, id: int) -> ContestDataRequestResponse:
+        res = self._send_request(endpoint=f"contest/{id}")
+
+        res["contest"]["problems"] = [x.get("problem") for x in res["contestProblems"]]
+        res["contest"]["isScoreboardFrozen"] = res["isScoreboardFrozen"]
+        return ContestDataRequestResponse(res)
+    
     def get_disscussion(self,
             id: int,
             page: int | None = None,
             orderBy: int | None = None,
     ) -> DiscussionRequestResponse:
         params = DiscussionRequestParams(json={"page": page, "orderBy": orderBy})
-        res = self._send_request(endpoint=f"discuss/show/{id}", params=params)
+        res = self._send_request(endpoint=f"discuss/{id}", params=params)
 
-        return DiscussionRequestResponse(res)
-        
+        return DiscussionRequestResponse(res)     
     
+    def get_activity(self, 
+            uid: int, 
+            page: int | None = None
+    ) -> ActivityRequestResponse:
+        params = ActivityReuqestParams(json={"user": uid, "page": page})
+        res = self._send_request(endpoint=f"/api/feed/list", params=params)
+
+        res["activities"] = res["feeds"]["result"]
+        return ActivityRequestResponse(res)
+
     def get_tags(self) -> TagRequestResponse:
         res = self._send_request(endpoint="/_lfe/tags")
         return TagRequestResponse(res)
