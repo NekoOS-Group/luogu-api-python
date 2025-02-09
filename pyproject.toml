@@ -17,6 +17,12 @@ dependencies = [
     "beautifulsoup4"
 ]
 requires-python = ">=3.7"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Operating System :: OS Independent",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Intended Audience :: Education"
+]
 
 [tool.setuptools]
 packages = ["pyLuogu"]
