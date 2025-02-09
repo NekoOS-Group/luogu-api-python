@@ -108,6 +108,12 @@ class UserSearchRequestParams(RequestParams):
         "keyword": str
     }
 
+class DiscussionRequestParams(RequestParams):
+    __type_dict__ = {
+        "page": int,
+        "orderBy": int
+    }
+
 class ProblemSummary(LuoguType):
     __type_dict__ = {
         "pid": str,
@@ -521,6 +527,9 @@ class UserDataRequestResponse(LuoguType):
     passedProblems: List['ProblemSummary']
     submittedProblems: List['ProblemSummary']
     # teams: Optional[List[Dict[str, Union['TeamSummary', 'Group', 'UserSummary', int]]]]
+
+class DiscussionRequestResponse(Response):
+    pass
 
 class TagRequestResponse(Response):
     __type_dict__ = {

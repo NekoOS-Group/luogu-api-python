@@ -1,11 +1,7 @@
 import json
-import ssl
-import aiohttp
 import asyncio
-import aiohttp.http_exceptions
+import httpx  # replaced: aiohttp, ssl, certifi, aiohttp.http_exceptions
 import bs4
-import certifi
-
 from .types import *
 from .errors import *
 from . import logger
@@ -14,22 +10,19 @@ class asyncLuoguAPI:
     def __init__(
             self,
             base_url="https://www.luogu.com.cn",
-            cookies: LuoguCookies = None
+            cookies: LuoguCookies = None,
+            timeout: float | httpx.Timeout | None = 10,
+            max_retries: int = 5
     ):
         self.base_url = base_url
         self.cookies = None if cookies is None else cookies.to_json()
-        self.session = None
-        self.ssl_context = ssl_context = ssl.create_default_context(cafile=certifi.where())
+        self.max_retries = max_retries
+        self.client = httpx.AsyncClient(
+            timeout=timeout,
+            cookies=self.cookies,
+            follow_redirects=True,
+        )
         self.x_csrf_token = None
-
-    async def __aenter__(self):
-        self.session = aiohttp.ClientSession()
-        return self
-
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        if self.session:
-            await self.session.close()
-            self.session = None
 
     async def _send_request(
             self,
@@ -41,95 +34,74 @@ class asyncLuoguAPI:
         url = f"{self.base_url}/{endpoint}"
         headers = await self._get_headers(method)
         param_final = None if params is None else params.to_json()
-        data_final = None if data is None else json.dumps(data)
+        json_data = None if data is None else data
 
+        request = self.client.build_request(
+            method, url,
+            headers=headers,
+            params=param_final,
+            json=json_data,
+        )
+        
         if method == "GET":
             logger.info(f"Async GET from {url} with params: {param_final}")
         else:
-            payload_str = data_final if len(data_final) < 50 else f"{data_final[:50]}..."
+            payload_str = json.dumps(json_data) if json_data and len(json.dumps(json_data)) < 50 else f"{json.dumps(json_data)[:50]}..."
             logger.info(f"Async POST to {url} with payload: {payload_str}")
 
-        async def _handle_response(response: aiohttp.ClientResponse, attempt: int) -> dict:
+        for attempt in range(self.max_retries):
+            try:
+                response = await self.client.send(request)
+            except httpx.TimeoutException as e:
+                logger.warning(f"Attempt {attempt + 1}: Timeout error - {e}")
+                await asyncio.sleep(1)
+                continue
+            except httpx.HTTPError as e:
+                logger.error(f"Request error: {e}")
+                raise RequestError("Request error") from e
+
             try:
                 response.raise_for_status()
-            except aiohttp.ClientResponseError as e:
-                if response.status == 401:
-                    raise AuthenticationError("Authentication failed")
-                elif response.status == 403:
-                    if await response.json().get("请求频繁，请稍候再试"):
-                        logger.info("Request too faster")
+                try:
+                    res_json = response.json()
+                except json.JSONDecodeError:
+                    logger.error(f"Failed to decode JSON response: {response.text}")
+                    raise RequestError("Failed to decode JSON response") from None
+                logger.debug(f"{json.dumps(res_json)}")
+
+                if res_json.get("currentTemplate") == "AuthLogin":
+                    raise AuthenticationError("Need Login")
+                if res_json.get("code") == 403:
+                    if res_json.get("请求频繁，请稍候再试"):
+                        logger.warning("403: Request too frequent")
                         await asyncio.sleep(attempt * 5)
-                        return None 
-                    if response.json().get("errorMessage") == "user.not_self":
+                        continue
+                    if res_json.get("errorMessage") == "user.not_self":
                         raise AuthenticationError("not yourself")
                     logger.warning("CSRF token expired, refreshing token...")
                     await self._get_csrf()
-                    return None
-                elif response.status == 404:
-                    raise NotFoundError("Resource not found")
-                elif response.status == 429:
-                    logger.info("Request too faster")
-                    await asyncio.sleep(attempt * 5)
-                    return None 
-                elif 500 <= response.status < 600:
-                    raise ServerError("Server error")
-                else:
-                    raise RequestError(f"HTTP error: {response.status}")
-
-            resp_json = await response.json()
-            logger.debug(f"{json.dumps(resp_json)}")
-
-            if resp_json.get("currentTemplate") == "AuthLogin":
-                if attempt == 6:
-                    raise AuthenticationError("Need Login")
-                await asyncio.sleep(attempt * 1)
-                logger.info("Try Again")
-                return None
-            
-            if resp_json.get("code") == 403:
-                error_message = resp_json.get("currentData", {}).get("errorMessage")
-                raise ForbiddenError(error_message or "Forbidden")
-            
-            if resp_json.get("code") in [404, 418]:
-                raise NotFoundError(f"Resource not found {endpoint}")
-
-            try:
-                if resp_json.get("currentData") is None:
-                    return resp_json
-                return resp_json["currentData"]
-            except json.JSONDecodeError as e:
-                logger.error(f"JSON decode error: {e}")
-                raise RequestError("JSON decode error") from e
-
-        for attempt in range(10):
-            response = None
-            try:
-                response = await self.session.request(
-                    method, url,
-                    headers=headers,
-                    params=param_final,
-                    data=data_final,
-                    cookies=self.cookies,
-                    timeout=5,
-                    ssl=self.ssl_context
-                )
-
-            except (aiohttp.ClientError, asyncio.TimeoutError) as e:  # Only catch connection-related errors
-                logger.warning(f"Attempt {attempt + 1}: Connection error - {e}")
-                if isinstance(e, (aiohttp.ClientTimeout, aiohttp.ClientConnectionError, asyncio.TimeoutError)):
-                    await asyncio.sleep(1)
-                    continue
-                raise RequestError("Connection error") from e
-
-            async with response:    
-                result = await _handle_response(response, attempt)
-                if result is None:  # Need to retry
                     headers = await self._get_headers(method)
                     continue
-                return result
-
-        logger.error("Failed to send request after 5 attempts")
-        raise RequestError("Failed to send request after 5 attempts")
+                if res_json.get("code") in [404, 418]:
+                    raise NotFoundError(f"Resource not found {endpoint}")
+                return res_json if res_json.get("currentData") is None else res_json["currentData"]
+            except httpx.HTTPStatusError as e:
+                if response.status_code == 401:
+                    raise AuthenticationError("Authentication failed") from e
+                elif response.status_code == 403:
+                    raise ForbiddenError("403 Forbidden") from e
+                elif response.status_code == 404:
+                    raise NotFoundError("Resource not found") from e
+                elif response.status_code == 429:
+                    logger.warning("429: Rate limit exceeded")
+                    await asyncio.sleep(attempt * 5)
+                    continue
+                elif 500 <= response.status_code < 600:
+                    raise ServerError("Server error") from e
+                else:
+                    raise RequestError("HTTP error") from e
+        logger.error("Failed to send request after 10 attempts")
+        raise RequestError("Failed to send request after 10 attempts")
 
     async def _get_headers(self, method: str) -> dict:
         headers = {
@@ -155,28 +127,23 @@ class asyncLuoguAPI:
 
         for attempt in range(5):
             try:
-                async with self.session.get(self.base_url, headers=headers, cookies=self.cookies) as response:
-                    await response.raise_for_status()
-                    
-                    soup = bs4.BeautifulSoup(await response.text(), "html.parser")
-                    csrf_meta = soup.select_one("meta[name='csrf-token']")
-
-                    if csrf_meta and "content" in csrf_meta.attrs:
-                        self.x_csrf_token = csrf_meta["content"]
-                        logger.info("CSRF token fetched successfully")
-                        return
-                    else:
-                        logger.warning("CSRF token not found, retrying...")
-                        await self.get_problem(pid="P1000")  # refresh the session
-                        await asyncio.sleep(1)
-            except (aiohttp.ClientTimeout, aiohttp.ClientConnectionError) as e:
+                response = await self.client.get(self.base_url, headers=headers, cookies=self.cookies)
+                response.raise_for_status()
+                soup = bs4.BeautifulSoup(response.text, "html.parser")
+                csrf_meta = soup.select_one("meta[name='csrf-token']")
+                if csrf_meta and "content" in csrf_meta.attrs:
+                    self.x_csrf_token = csrf_meta["content"]
+                    logger.info("CSRF token fetched successfully")
+                    return
+                else:
+                    logger.warning("CSRF token not found, retrying...")
+                    await self.get_problem(pid="P1000")
+                    await asyncio.sleep(1)
+            except httpx.TimeoutException as e:
                 logger.warning(f"Attempt {attempt + 1}: Timeout error - {e}")
                 await asyncio.sleep(1)
-            except aiohttp.ClientError as e:
+            except httpx.HTTPError as e:
                 logger.error(f"HTTP error: {e}")
-                raise
-            except aiohttp.ClientError as e:
-                logger.error(f"Request error: {e}")
                 raise
 
         logger.error("Failed to fetch CSRF token after 5 attempts")

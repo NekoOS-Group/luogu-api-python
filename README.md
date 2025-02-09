@@ -17,14 +17,9 @@ $ pip3 install luogu-api-python
 
 To install the package from source, follow these steps:
 
-1. Clone the repository:
     ```commandline
     $ git clone https://github.com/NekoOS-Group/luogu-api-python.git
     $ cd luogu-api-python
-    ```
-
-2. Install the package:
-    ```commandline
     $ python3 -m pip install .
     ```
 
@@ -58,10 +53,9 @@ import pyLuogu
 luogu = pyLuogu.asyncLuoguAPI()
 
 async def main():
-    async with luogu:
-        problems = (await luogu.get_problem_list()).problems
-        for problem in problems:
-            print(problem.title)
+    problems = (await luogu.get_problem_list()).problems
+    for problem in problems:
+        print(problem.title)
 
 asyncio.run(main())
 ```
@@ -126,7 +120,7 @@ API Implementation Status
   - [x] get_user_blacklist
   - [x] search_user
 
-- [-] User Operations
+- [x] User Operations
   - [ ] login
   - [ ] logout
   - [x] me
@@ -136,7 +130,7 @@ API Implementation Status
   - [ ] get_created_content_list
   - [ ] update_setting
 
-- [-] Miscellaneous
+- [x] Miscellaneous
   - [x] get_tags
   - [ ] get_captcha
   - [ ] sign_up
