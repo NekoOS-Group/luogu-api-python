@@ -1,7 +1,10 @@
 import json
 import asyncio
-import httpx  # replaced: aiohttp, ssl, certifi, aiohttp.http_exceptions
+from typing import List, Literal
+
+import httpx
 import bs4
+
 from .types import *
 from .errors import *
 from . import logger
@@ -111,7 +114,7 @@ class asyncLuoguAPI:
 
     async def _get_headers(self, method: str) -> dict:
         headers = {
-            "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:133.0) Gecko/20100101 Firefox/133.",
+            "User-Agent": "luogu_bot",
             "x-lentille-request": "content-only",
             "x-luogu-type": "content-only",
         }
@@ -127,9 +130,7 @@ class asyncLuoguAPI:
 
     async def _get_csrf(self) -> str:
         headers = {
-            "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:133.0) Gecko/20100101 Firefox/133.",
-            "Referer": self.base_url,
-            "Content-Type": "text/html"
+            "User-Agent": "luogu_bot",
         }
 
         for attempt in range(self.max_retries):

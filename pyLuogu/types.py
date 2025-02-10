@@ -1,9 +1,71 @@
 from typing import List, Tuple, Literal, Dict, Union, Optional, Any
 
+from .bits.ultility import JsonSerializable, Printable
+
+__all__ = [
+    "LuoguType",
+    "RequestParams",
+    "Response",
+    "ListRequestParams",
+    "ProblemListRequestParams",
+    "ProblemSetListRequestParams",
+    "UserListRequestParams",
+    "RecordListRequestParams",
+    "ThemeListRequestParams",
+    "ArticleListRequestParams",
+    "BlogListRequestParams",
+    "RankingListRequestParams",
+    "ProblemRequestParams",
+    "UserSearchRequestParams",
+    "DiscussionRequestParams",
+    "ActivityReuqestParams",
+    "ProblemSummary",
+    "VjudgeSummary",
+    "UserSummary",
+    "TeamSummary",
+    "TeamMember",
+    "Provider",
+    "Attachment",
+    "ProblemDetails",
+    "TestCase",
+    "ScoringStrategy",
+    "ProblemSettings",
+    "TestCaseSettings",
+    "UserDetails",
+    "ProblemSetSummary",
+    "ProblemSetDetails",
+    "ContestSummary",
+    "ContestDetails",
+    "ContestSettings",
+    "Activity",
+    "Forum",
+    "Reply",
+    "PostSummary",
+    "Post",
+    "Paste",
+    "Image",
+    "TagDetail",
+    "TagType",
+    "TeamDetail",
+    "ProblemListRequestResponse",
+    "ProblemDataRequestResponse",
+    "ProblemSettingsRequestResponse",
+    "ProblemModifiedResponse",
+    "UpdateTestCasesSettingsResponse",
+    "ProblemSetDataRequestResponse",
+    "ContestDataRequestResponse",
+    "UserDataRequestResponse",
+    "DiscussionRequestResponse",
+    "ActivityRequestResponse",
+    "TeamDataRequestResponse",
+    "TagRequestResponse",
+    "LuoguCookies",
+    "ProblemType",
+    "TransferProblemType"
+]
+
 ProblemType = Literal["P", "U", "T", "B", "CF", "AT", "UVA", "SP"]
 TransferProblemType = Literal["P", "U", "B"] | int
-
-from .bits.ultility import JsonSerializable, Printable
 
 class LuoguType(JsonSerializable, Printable):
     __type_dict__ = {}
@@ -149,6 +211,16 @@ class ProblemSummary(LuoguType):
     def inline(self):
         return f"{self.pid} {self.title} {self.tags} {self.difficulty}"
 
+class VjudgeSummary(LuoguType):
+    __type_dict__ = {
+        "origin": str,
+        "link": str,
+        "id": str
+    }
+    origin: str
+    link: str
+    id: str
+
 class UserSummary(LuoguType):
     __type_dict__ = {
         "uid": int, 
@@ -185,6 +257,20 @@ class TeamSummary(LuoguType):
     name: str
     isPremium: bool
 
+class TeamMember(LuoguType):
+    __type_dict__ = {
+        # "group": Group,
+        "user": UserSummary,
+        "type": int,
+        "permission": int,
+        "realName": str
+    }
+    # group: Group | None
+    user: UserSummary
+    type: int
+    permission: int
+    realName: str
+
 class Provider(LuoguType):
     __type_dict__ = {
         "user": UserSummary,
@@ -219,6 +305,62 @@ class Attachment(LuoguType):
     id: str
     fileName: str
 
+class ProblemSetSummary(LuoguType):
+    __type_dict__ = {
+        "createTime": int,
+        "deadline": int,
+        "problemCount": int,
+        "marked": bool,
+        "markCount": int,
+        "id": int,
+        "title": str,
+        "type": int,
+        "provider": Provider
+    }
+    createTime: int
+    deadline: Optional[int]
+    problemCount: int
+    marked: bool
+    markCount: int
+    id: int
+    title: str
+    type: int
+    provider: Provider
+
+class ContestSummary(LuoguType):
+    __type_dict__ = {
+        "id": int,
+        "name": str,
+        "startTime": int,
+        "endTime": int,
+    }
+    id: int
+    name: str
+    startTime: int
+    endTime: int
+
+class Prize(LuoguType):
+    __type_dict__ = {
+        "year": int,
+        "contestName": str,
+        "prize": str
+    }
+    year: int
+    contestName: str
+    prize: str
+
+class EloRatingSummary(LuoguType):
+    __type_dict__ = {
+        "contest": ContestSummary,
+        "rating": int,
+        "time": int,
+        "latest": bool
+    }
+    contest: ContestSummary
+    rating: int
+    time: int
+    latest: bool
+
 class ProblemDetails(ProblemSummary):
     __type_dict__ = {
         **ProblemSummary.__type_dict__,
@@ -231,18 +373,11 @@ class ProblemDetails(ProblemSummary):
         "provider": Provider,
         "attachments": [Attachment],
         "canEdit": bool,
-        # "limits": {
-        #     "time": [int],
-        #     "memory": [int]
-        # } ,
+        "limits": [(int, int)],
         "showScore": bool,
         "score": int,
         "stdCode": str,
-        # "vjudge": {
-        #    "origin": str,
-        #    "link": str,
-        #    "id": str
-        # },
+        "vjudge": VjudgeSummary,
         "translation": str
     }
     pid: str
@@ -264,9 +399,11 @@ class ProblemDetails(ProblemSummary):
     provider: Provider
     attachments: List[Attachment]
     canEdit: bool
+    limits: List[Tuple[int, int]]
     showScore: bool
     score: int
     stdCode: str
+    vjudge: VjudgeSummary | None
     translation: str
 
 class TestCase(LuoguType):
@@ -332,6 +469,7 @@ class ProblemSettings(LuoguType):
     showScore: bool
     providerID: int
     flag: int
+
     @staticmethod
     def get_default():
         return ProblemSettings(
@@ -355,6 +493,7 @@ class ProblemSettings(LuoguType):
                 "flag": 0
             }
         )
+    
     def get_markdown(self):
         return "\n## 题目背景\n" + str(self.background) + \
         "\n## 题目描述\n" + str(self.description) + \
@@ -394,12 +533,12 @@ class UserDetails(UserSummary):
         "followingCount": int,
         "followerCount": int,
         "ranking": int,
-        "eloValue": int,
-        # "rating": 'Rating',
+        # "rating": 'Rating', # aka guzhi
         "registerTime": int,
         "introduction": str,
-        #"prize": List[Dict[str, Union[str, int]]],
-        # "elo": 'EloRatingSummary'
+        "prize": [Prize],
+        "elo": EloRatingSummary,
+        "eloMax": EloRatingSummary,
         "userRelationship": int,
         "reverseUserRelationship": int,
         "passedProblemCount": int,
@@ -412,49 +551,17 @@ class UserDetails(UserSummary):
     # rating: Rating
     registerTime: int
     introduction: str
-    # prize: List[Dict[str, Union[str, int]]]
-    # elo: 'EloRatingSummary'
+    prize: List[Prize]
+    elo: EloRatingSummary
+    eloMax: EloRatingSummary
     userRelationship: int
     reverseUserRelationship: int
     passedProblemCount: int
     submittedProblemCount: int
 
-class SelfDetails(LuoguType):
+class ProblemSetDetails(ProblemSetSummary):
     __type_dict__ = {
-        "verified": bool,
-        "unreadMessageCount": int,
-        "unreadNoticeCount": int,
-        "organization": Optional[str],
-        "email": str,
-        "phone": str
-    }
-    # ...existing fields...
-
-class ProblemSet(LuoguType):
-    __type_dict__ = {
-        "createTime": int,
-        "deadline": int,
-        "problemCount": int,
-        "marked": bool,
-        "markCount": int,
-        "id": int,
-        "title": str,
-        "type": int,
-        "provider": Provider
-    }
-    createTime: int
-    deadline: Optional[int]
-    problemCount: int
-    marked: bool
-    markCount: int
-    id: int
-    title: str
-    type: int
-    provider: Provider
-
-class ProblemSetDetails(ProblemSet):
-    __type_dict__ = {
-        **ProblemSet.__type_dict__,
+        **ProblemSetSummary.__type_dict__,
         "description": str,
         "problems": [ProblemSummary],
         # "userScore": Optional[Dict[str, Union[UserSummary, int, Dict[str, Optional[int]], Dict[str, bool]]]],
@@ -462,18 +569,6 @@ class ProblemSetDetails(ProblemSet):
     description: str
     problems: List[ProblemSummary]
     # userScore: Optional[Dict[str, Union[UserSummary, int, Dict[str, Optional[int]], Dict[str, bool]]]]
-
-class ContestSummary(LuoguType):
-    __type_dict__ = {
-        "id": int,
-        "name": str,
-        "startTime": int,
-        "endTime": int,
-    }
-    id: int
-    name: str
-    startTime: int
-    endTime: int
     
 class ContestDetails(ContestSummary):
     __type_dict__ = {
@@ -570,6 +665,23 @@ class Reply(LuoguType):
     author: UserSummary
     time: int
 
+class TeamDetail(TeamSummary):
+    __type_dict__ = {
+        **TeamSummary.__type_dict__,
+        "createTime": int,
+        "master": UserSummary,
+        # "setting": {str: Union[str, int]},
+        "premiumUntil": int,
+        "type": int,
+        "memberCount": int
+    }
+    createTime: int
+    master: UserSummary
+    # setting: Dict[str, Union[str, int]]
+    premiumUntil: int | None
+    type: int
+    memberCount: int
+
 class PostSummary(LuoguType):
     __type_dict__ = {
         "id": int,
@@ -582,7 +694,7 @@ class PostSummary(LuoguType):
         "valid": bool,
         "locked": bool,
         "replyCount": int,
-        # "recentReply": Reply | bool,
+        "recentReply": Reply,
     }
     id: int
     title: str
@@ -595,7 +707,7 @@ class PostSummary(LuoguType):
     valid: bool
     locked: bool
     replyCount: int
-    # recentReply: Union[Reply, bool]
+    recentReply: Reply
 
 class Post(PostSummary):
     __type_dict__ = {
@@ -605,6 +717,36 @@ class Post(PostSummary):
     }
     pinnedReply: None
     content: str
+
+class Paste(LuoguType):
+    __type_dict__ = {
+        "data": str,
+        "id": str,
+        "user": UserSummary,
+        "time": int,
+        "public": bool
+    }
+    data: str
+    id: str
+    user: UserSummary
+    time: int
+    public: bool
+
+class Image(LuoguType):
+    __type_dict__ = {
+        "thumbnailUrl": str,
+        "url": str,
+        "id": str,
+        "provider": UserSummary,
+        "uploadTime": int,
+        "size": int
+    }
+    thumbnailUrl: str
+    url: str
+    id: str
+    provider: UserSummary
+    uploadTime: int
+    size: int
 
 class TagDetail(LuoguType):
     __type_dict__ = {
@@ -644,7 +786,7 @@ class ProblemDataRequestResponse(LuoguType):
     __type_dict__ = {
         "problem": ProblemDetails,
         "contest": ContestSummary,
-        # "discussions": [LegacyPostSummary],
+        "discussions": [PostSummary],
         "bookmarked": bool,
         "vjudgeUsername": str,
         "recommendations": [ProblemSummary], 
@@ -655,6 +797,7 @@ class ProblemDataRequestResponse(LuoguType):
     }
     problem: ProblemDetails
     contest: ContestSummary
+    discussions: List[PostSummary]
     bookmarked: bool
     vjudgeUsername: str
     recommendations: List[ProblemSummary]
@@ -732,16 +875,14 @@ class ContestDataRequestResponse(Response):
 class UserDataRequestResponse(LuoguType):
     __type_dict__ = {
         "user": UserDetails,
-        # "eloMax": Optional[Dict[str, Union[int, bool]]],
         "passedProblems": [ProblemSummary],
         "submittedProblems": [ProblemSummary],
-        # "teams": Optional[List[Dict[str, Union['TeamSummary', 'Group', 'UserSummary', int]]]]
+        "teams": [TeamSummary]
     }
     user: UserDetails
-    # eloMax: Optional[Dict[str, Union[int, bool]]]
     passedProblems: List['ProblemSummary']
     submittedProblems: List['ProblemSummary']
-    # teams: Optional[List[Dict[str, Union['TeamSummary', 'Group', 'UserSummary', int]]]]
+    teams: List[TeamSummary]
 
 class DiscussionRequestResponse(Response):
     __type_dict__ = {
@@ -768,6 +909,27 @@ class ActivityRequestResponse(Response):
     activities: List[Activity]
     count: int
     perPage: int
+
+class TeamDataRequestResponse(Response):
+    __type_dict__ = {
+        "team": TeamDetail,
+        "currentTeamMember": TeamMember,
+        "latestDiscussions": [PostSummary],
+        # "joinRequest": Optional[Any],  # TODO: Define the type
+        # "groups": List['Group'],
+        # "usages": {
+        #    "problem": Tuple[int, int],
+        #    "training": Tuple[int, int],
+        #    "contest": Tuple[int, int],
+        #    "file": Tuple[int, int]
+        # }
+    }
+    team: TeamDetail
+    currentTeamMember: TeamMember | None
+    latestDiscussions: PostSummary | None
+    # joinRequest: Optional[Any]  # TODO: Define the type
+    # groups: List['Group']
+    # usages: Dict[str, Tuple[int, int]]
 
 class TagRequestResponse(Response):
     __type_dict__ = {

@@ -1,6 +1,7 @@
 import json
 import time
-     
+from typing import List, Literal
+
 import httpx
 import bs4
 
@@ -116,7 +117,7 @@ class luoguAPI:
 
     def _get_headers(self, method: str) -> dict:
         headers = {
-            "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:133.0) Gecko/20100101 Firefox/133.",
+            "User-Agent": "luogu_bot",
             "x-luogu-type": "content-only",
             "x-lentille-request": "content-only",
         }
@@ -132,9 +133,7 @@ class luoguAPI:
 
     def _get_csrf(self, endpoint="") -> str:
         headers = {
-            "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:133.0) Gecko/20100101 Firefox/133.",
-            "x-luogu-type": "content-only",
-            "Content-Type": "text/html"
+            "User-Agent": "luogu_bot",
         }
 
         for attempt in range(self.max_retries):
@@ -239,6 +238,10 @@ class luoguAPI:
     ) -> ProblemDataRequestResponse:
         params = ProblemRequestParams(json={"contest_id": contest_id})
         res = self._send_request(endpoint=f"problem/{pid}", params=params)
+
+        res["problem"]["limits"] = list(zip(
+            res["problem"]["limits"]["time"], res["problem"]["limits"]["memory"]
+        ) )
 
         return ProblemDataRequestResponse(res)
 
@@ -357,6 +360,10 @@ class luoguAPI:
         
     def get_user(self, uid: int) -> UserDataRequestResponse:
         res = self._send_request(endpoint=f"user/{uid}")
+        
+        if res.get("teams") is not None:
+            res["teams"] = [x.get("team") for x in res["teams"]]
+        res["user"]["eloMax"] = res["eloMax"]
 
         return UserDataRequestResponse(res)
 
@@ -422,7 +429,21 @@ class luoguAPI:
         res = self._send_request(endpoint=f"/api/feed/list", params=params)
 
         res["activities"] = res["feeds"]["result"]
+        res["perPage"] = res["feeds"]["perPage"]
+        res["count"] = res["feeds"]["count"]
         return ActivityRequestResponse(res)
+
+    def get_team(self, tid: int) -> TeamDataRequestResponse:
+        res = self._send_request(endpoint=f"team/{tid}")
+        return TeamDataRequestResponse(res)
+
+    def get_paste(self, id: int) -> Paste:
+        res = self._send_request(endpoint=f"paste/{id}")
+        return Paste(res)
+    
+    def get_image(self, id: int) -> Image:
+        res = self._send_request(endpoint=f"/api/image/detail/{id}")
+        return Image(res)
 
     def get_tags(self) -> TagRequestResponse:
         res = self._send_request(endpoint="/_lfe/tags")

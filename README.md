@@ -124,6 +124,15 @@ API Implementation Status
 - [x] Activity(benben) API
   - [x] get_activity
 
+- [x] Team API
+  - [x] get_team
+
+- [x] Paste API
+  - [x] get_paste
+
+- [x] Image API
+  - [x] get_image
+
 - [x] User API
   - [x] get_user
   - [x] get_user_info
