@@ -546,6 +546,66 @@ class Activity(LuoguType):
     time: int
     user: UserSummary
 
+class Forum(LuoguType):
+    __type_dict__ = {
+        "name": str,
+        "type": int,
+        "slug": str,
+        "color": str,
+    }
+    name: str
+    type: int
+    slug: str
+    color: str
+
+class Reply(LuoguType):
+    __type_dict__ = {
+        "id": int,
+        "content": str,
+        "time": int,
+        "author": UserSummary,
+    }
+    id: int
+    content: str
+    author: UserSummary
+    time: int
+
+class PostSummary(LuoguType):
+    __type_dict__ = {
+        "id": int,
+        "title": str,
+        "author": UserSummary,
+        "createTime": int,
+        "updateTime": int,
+        "forum": Forum,
+        "topped": bool,
+        "valid": bool,
+        "locked": bool,
+        "replyCount": int,
+        # "recentReply": Reply | bool,
+    }
+    id: int
+    title: str
+    content: str
+    author: UserSummary
+    createTime: int
+    updateTime: int
+    forum: Forum
+    topped: bool
+    valid: bool
+    locked: bool
+    replyCount: int
+    # recentReply: Union[Reply, bool]
+
+class Post(PostSummary):
+    __type_dict__ = {
+        **PostSummary.__type_dict__,
+        "pinnedReply": Reply,
+        "content": str
+    }
+    pinnedReply: None
+    content: str
+
 class TagDetail(LuoguType):
     __type_dict__ = {
         "id": int,
@@ -683,75 +743,19 @@ class UserDataRequestResponse(LuoguType):
     submittedProblems: List['ProblemSummary']
     # teams: Optional[List[Dict[str, Union['TeamSummary', 'Group', 'UserSummary', int]]]]
 
-class Forum(LuoguType):
-    __type_dict__ = {
-        "name": str,
-        "type": int,
-        "slug": str,
-        "color": str,
-    }
-    name: str
-    type: int
-    slug: str
-    color: str
-
-class Reply(LuoguType):
-    __type_dict__ = {
-        "id": int,
-        "content": str,
-        "time": int,
-        "author": UserSummary,
-    }
-    id: int
-    content: str
-    author: UserSummary
-    time: int
-
-class PostSummary(LuoguType):
-    __type_dict__ = {
-        "id": int,
-        "title": str,
-        "author": UserSummary,
-        "createTime": int,
-        "updateTime": int,
-        "forum": Forum,
-        "topped": bool,
-        "valid": bool,
-        "locked": bool,
-        "replyCount": int,
-        # "recentReply": Reply | bool,
-    }
-    id: int
-    title: str
-    content: str
-    author: UserSummary
-    createTime: int
-    updateTime: int
-    forum: Forum
-    topped: bool
-    valid: bool
-    locked: bool
-    replyCount: int
-    # recentReply: Union[Reply, bool]
-
-class Post(PostSummary):
-    __type_dict__ = {
-        **PostSummary.__type_dict__,
-        "pinnedReply": Reply,
-        "content": str
-    }
-    pinnedReply: None
-    content: str
-
 class DiscussionRequestResponse(Response):
     __type_dict__ = {
         "forum": Forum,
         "post": Post,
+        "count": int,
+        "perPage": int,
         "replies": [Reply],
         "canReply": bool,
     }
     forum: Forum
     post: Post
+    count: int
+    perPage: int 
     replies: List[Reply]
     canReply: bool
 

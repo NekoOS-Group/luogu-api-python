@@ -34,19 +34,19 @@ class asyncLuoguAPI:
         url = f"{self.base_url}/{endpoint}"
         headers = await self._get_headers(method)
         param_final = None if params is None else params.to_json()
-        json_data = None if data is None else data
 
         request = self.client.build_request(
             method, url,
             headers=headers,
             params=param_final,
-            json=json_data,
+            json=data,
         )
         
         if method == "GET":
             logger.info(f"Async GET from {url} with params: {param_final}")
         else:
-            payload_str = json.dumps(json_data) if json_data and len(json.dumps(json_data)) < 50 else f"{json.dumps(json_data)[:50]}..."
+            data_str = json.dumps(data)
+            payload_str = data_str if data and len(data_str) < 50 else data_str[:50] + "..."
             logger.info(f"Async POST to {url} with payload: {payload_str}")
 
         for attempt in range(self.max_retries):
@@ -84,7 +84,12 @@ class asyncLuoguAPI:
                     continue
                 if res_json.get("code") in [404, 418]:
                     raise NotFoundError(f"Resource not found {endpoint}")
-                return res_json if res_json.get("currentData") is None else res_json["currentData"]
+
+                if res_json.get("currentData") is not None:
+                    res_json = res_json.get("currentData")
+                if res_json.get("data") is not None:
+                    res_json = res_json.get("data")
+                return res_json
             except httpx.HTTPStatusError as e:
                 if response.status_code == 401:
                     raise AuthenticationError("Authentication failed") from e
@@ -100,12 +105,14 @@ class asyncLuoguAPI:
                     raise ServerError("Server error") from e
                 else:
                     raise RequestError("HTTP error") from e
+        
         logger.error("Failed to send request after 10 attempts")
         raise RequestError("Failed to send request after 10 attempts")
 
     async def _get_headers(self, method: str) -> dict:
         headers = {
             "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:133.0) Gecko/20100101 Firefox/133.",
+            "x-lentille-request": "content-only",
             "x-luogu-type": "content-only",
         }
         if method != "GET":
@@ -118,14 +125,14 @@ class asyncLuoguAPI:
             })
         return headers
 
-    async def _get_csrf(self):
+    async def _get_csrf(self) -> str:
         headers = {
             "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:133.0) Gecko/20100101 Firefox/133.",
-            "x-luogu-type": "content-only",
+            "Referer": self.base_url,
             "Content-Type": "text/html"
         }
 
-        for attempt in range(5):
+        for attempt in range(self.max_retries):
             try:
                 response = await self.client.get(self.base_url, headers=headers, cookies=self.cookies)
                 response.raise_for_status()
@@ -134,17 +141,16 @@ class asyncLuoguAPI:
                 if csrf_meta and "content" in csrf_meta.attrs:
                     self.x_csrf_token = csrf_meta["content"]
                     logger.info("CSRF token fetched successfully")
-                    return
+                    return self.x_csrf_token
                 else:
                     logger.warning("CSRF token not found, retrying...")
-                    await self.get_problem(pid="P1000")
                     await asyncio.sleep(1)
             except httpx.TimeoutException as e:
                 logger.warning(f"Attempt {attempt + 1}: Timeout error - {e}")
                 await asyncio.sleep(1)
             except httpx.HTTPError as e:
                 logger.error(f"HTTP error: {e}")
-                raise
+                raise RequestError("HTTP error") from e
 
         logger.error("Failed to fetch CSRF token after 5 attempts")
         raise RequestError("Failed to fetch CSRF token after 5 attempts")

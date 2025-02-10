@@ -11,17 +11,17 @@ Upstream docs: [https://github.com/sjx233/luogu-api-docs](https://github.com/sjx
 
 To install the package, use pip:
 
-```commandline
+```console
 $ pip3 install luogu-api-python
 ```
 
 To install the package from source, follow these steps:
 
-    ```commandline
-    $ git clone https://github.com/NekoOS-Group/luogu-api-python.git
-    $ cd luogu-api-python
-    $ python3 -m pip install .
-    ```
+```console
+$ git clone https://github.com/NekoOS-Group/luogu-api-python.git
+$ cd luogu-api-python
+$ python3 -m pip install .
+```
 
 ## Usage
 
@@ -119,7 +119,7 @@ API Implementation Status
   - [x] get_contest
 
 - [x] Discussion API
-  - [ ] get_discussion (failed to parse)
+  - [x] get_discussion
 
 - [x] Activity(benben) API
   - [x] get_activity
