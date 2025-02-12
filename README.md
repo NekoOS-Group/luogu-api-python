@@ -1,9 +1,16 @@
-# luogu-api-python
-A Python implementation of the Luogu API.
+<h1 align="center">
+  <img src="docs/icon_test.jpg" alt="Project Icon" width="150">
+  <br>
+  luogu-api-python
+</h1>
 
-## Project Description
+<div align="center" style="display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; margin-bottom: 20px;">
+  <a href="#"><img alt="Python Version" src="https://img.shields.io/badge/Python-3.7%2B-blue?style=for-the-badge"></a>
+  <a href="#"><img alt="License" src="https://img.shields.io/badge/License-GPLv3-green?style=for-the-badge"></a>
+  <a href="#"><img alt="PyPI Version" src="https://img.shields.io/pypi/v/luogu-api-python?style=for-the-badge"></a>
+</div>
 
-`luogu-api-python` is a Python library that provides an interface to interact with the Luogu online judge system. It allows users to programmatically manage problems, and user operations on Luogu. This library aims to simplify the process of automating tasks on Luogu by providing easy-to-use methods and classes.
+luogu-api-python is a Python implementation of the Luogu API. It provides an interface to interact with the Luogu online judge system, allowing users to programmatically manage problems and user operations on Luogu. This library aims to simplify automating tasks on Luogu with easy-to-use methods and classes.
 
 Upstream docs: [https://github.com/sjx233/luogu-api-docs](https://github.com/sjx233/luogu-api-docs)
 
@@ -118,6 +125,14 @@ API Implementation Status
 - [x] Contest API
   - [x] get_contest
 
+- [x] User API
+  - [x] get_user
+  - [x] get_user_info
+  - [x] get_user_followings_list
+  - [x] get_user_followers_list
+  - [x] get_user_blacklist
+  - [x] search_user
+
 - [x] Discussion API
   - [x] get_discussion
 
@@ -132,14 +147,6 @@ API Implementation Status
 
 - [x] Artical API
   - [x] get_solution
-
-- [x] User API
-  - [x] get_user
-  - [x] get_user_info
-  - [x] get_user_followings_list
-  - [x] get_user_followers_list
-  - [x] get_user_blacklist
-  - [x] search_user
 
 - [x] User Operations
   - [ ] login
