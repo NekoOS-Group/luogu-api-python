@@ -1,0 +1,36 @@
+# This workflow will install dependencies of luogu-api-python and test build it.
+# Triggers on committing and/or pull-requesting to main branch.
+
+name: Test packaging of luogu-api-python
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.10", "3.11"]
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v3
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Installing dependency
+      run: |
+        python -m pip install build setuptools
+    - name: Test building
+      run: |
+        python -m build
+    - name: Test installing package
+      run: |
+        python -m pip install dist/*.whl
+        
