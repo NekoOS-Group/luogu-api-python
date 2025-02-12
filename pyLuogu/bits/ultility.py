@@ -312,17 +312,3 @@ class LazyProxy:
             super().__setattr__(name, value)
         else:
             setattr(self._lazy, name, value)
-
-# Example usage:
-# class SomeClass:
-#     def __init__(self):
-#         self.some_field = "value"
-# 
-# def load_data():
-#     return SomeClass()
-# 
-# class SomeClassProxy(LazyProxy):
-#     some_field: str
-# 
-# lazy_instance = SomeClassProxy(load_data, cache_duration=120)
-# lazy_instance.some_field  # This will trigger the load function

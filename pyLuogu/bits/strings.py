@@ -75,7 +75,7 @@ def str_type_of(x, origin: bool = False) -> str:
         return decorating("(", 34) + ", ".join([str_type_of(v) for v in x]) + decorating(")", 34)
     elif isinstance(x, dict):
         k, v = list(x.items())[0]
-        return decorating("map: ", 34) + str_type(type(k)) + " -> " + str_type(type(v))
+        return decorating("map: ", 34) + str_type(type(k)) + " -> " + str_type_of(v)
     elif isinstance(x, (int, float, bool)):
         return decorating(type_str, 36)
     elif isinstance(x, str):

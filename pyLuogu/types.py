@@ -53,11 +53,13 @@ __all__ = [
     "ProblemModifiedResponse",
     "UpdateTestCasesSettingsResponse",
     "ProblemSetDataRequestResponse",
+    "ProblemSolutionRequestResponse",
     "ContestDataRequestResponse",
     "UserDataRequestResponse",
     "DiscussionRequestResponse",
     "ActivityRequestResponse",
     "TeamDataRequestResponse",
+    "PasteRequestResponse",
     "TagRequestResponse",
     "LuoguCookies",
     "ProblemType",
@@ -184,29 +186,36 @@ class ActivityReuqestParams(RequestParams):
     user: int
     page: int
 
-class ProblemSummary(LuoguType):
+class ProblemSketch(LuoguType):
     __type_dict__ = {
         "pid": str,
         "title": str,
         "difficulty": int,
-        "tags": [int],
-        "wantsTranslation": bool,
-        "totalSubmit": int,
-        "totalAccepted": int,
-        "flag": int,
-        "fullScore": int,
-        "type": str
+        "type": str,
+        "submitted": bool,
+        "accepted": bool
     }
     pid: str
     title: str
     difficulty: int
+    type: str
+    submitted: bool
+    accepted: bool
+
+class ProblemSummary(ProblemSketch):
+    __type_dict__ = {
+        **ProblemSketch.__type_dict__,
+        "tags": [int],
+        "totalSubmit": int,
+        "totalAccepted": int,
+        "flag": int,
+        "fullScore": int,
+    }
     tags: List[int]
-    wantsTranslation: bool
     totalSubmit: int
     totalAccepted: int
     flag: int
     fullScore: int
-    type: str
 
     def inline(self):
         return f"{self.pid} {self.title} {self.tags} {self.difficulty}"
@@ -257,15 +266,47 @@ class TeamSummary(LuoguType):
     name: str
     isPremium: bool
 
+class ProblemContent(LuoguType):
+    __type_dict__ = {
+        "user": UserSummary,
+        "version": int,
+        "name": str,
+        "background": str,
+        "description": str,
+        "formatI": str,
+        "formatO": str,
+        "hint": str,
+        "locale": str
+    }
+    user: UserSummary | None
+    version: int
+    name: str
+    background: str
+    description: str
+    formatI: str
+    formatO: str
+    hint: str
+    locale: str
+
+class Group(LuoguType):
+    __type_dict__ = {
+        "id": int,
+        "name": str,
+        "no": int
+    }
+    id: int
+    name: str
+    no: int
+
 class TeamMember(LuoguType):
     __type_dict__ = {
-        # "group": Group,
+        "group": Group,
         "user": UserSummary,
         "type": int,
         "permission": int,
         "realName": str
     }
-    # group: Group | None
+    group: Group | None
     user: UserSummary
     type: int
     permission: int
@@ -339,6 +380,64 @@ class ContestSummary(LuoguType):
     startTime: int
     endTime: int
 
+class Forum(LuoguType):
+    __type_dict__ = {
+        "name": str,
+        "type": int,
+        "slug": str,
+        "color": str,
+    }
+    name: str
+    type: int
+    slug: str
+    color: str
+
+class Reply(LuoguType):
+    __type_dict__ = {
+        "id": int,
+        "content": str,
+        "time": int,
+        "author": UserSummary,
+    }
+    id: int
+    content: str
+    author: UserSummary
+    time: int
+
+class PostSketch(LuoguType):
+    __type_dict__ = {
+        "id": int,
+        "title": str,
+        "author": UserSummary,
+        "time": int
+    }
+    id: int
+    title: str
+    author: UserSummary
+    time: int
+
+class PostSummary(PostSketch):
+    __type_dict__ = {
+        "content": str,
+        "createTime": int,
+        "updateTime": int,
+        "forum": Forum,
+        "topped": bool,
+        "valid": bool,
+        "locked": bool,
+        "replyCount": int,
+        "recentReply": Reply,
+    }
+    content: str
+    createTime: int
+    updateTime: int
+    forum: Forum
+    topped: bool
+    valid: bool
+    locked: bool
+    replyCount: int
+    recentReply: Reply
+
 class Prize(LuoguType):
     __type_dict__ = {
         "year": int,
@@ -364,47 +463,28 @@ class EloRatingSummary(LuoguType):
 class ProblemDetails(ProblemSummary):
     __type_dict__ = {
         **ProblemSummary.__type_dict__,
-        "background": str,
-        "description": str,
-        "inputFormat": str,
-        "outputFormat": str,
+        "content": ProblemContent, 
+        # "contenu" : ???,
         "samples": [(str, str)],
-        "hint": str,
         "provider": Provider,
         "attachments": [Attachment],
-        "canEdit": bool,
         "limits": [(int, int)],
         "showScore": bool,
         "score": int,
         "stdCode": str,
         "vjudge": VjudgeSummary,
-        "translation": str
+        "acceptLanguages": [int]
     }
-    pid: str
-    title: str
-    difficulty: int
-    tags: List[int]
-    wantsTranslation: bool
-    totalSubmit: int
-    totalAccepted: int
-    flag: int
-    fullScore: int
-    type: str
-    background: str
-    description: str
-    inputFormat: str
-    outputFormat: str
+    content: ProblemContent
     samples: List[Tuple[str, str]]
-    hint: str
     provider: Provider
     attachments: List[Attachment]
-    canEdit: bool
     limits: List[Tuple[int, int]]
     showScore: bool
     score: int
     stdCode: str
     vjudge: VjudgeSummary | None
-    translation: str
+    acceptLanguages: List[int]
 
 class TestCase(LuoguType):
     __type_dict__ = {
@@ -641,73 +721,34 @@ class Activity(LuoguType):
     time: int
     user: UserSummary
 
-class Forum(LuoguType):
+class TeamSettings(LuoguType):
     __type_dict__ = {
-        "name": str,
-        "type": int,
-        "slug": str,
-        "color": str,
+        "description": str,
+        "notice": str,
+        "contact": {str: str},
+        "joinPermission": int
     }
-    name: str
-    type: int
-    slug: str
-    color: str
-
-class Reply(LuoguType):
-    __type_dict__ = {
-        "id": int,
-        "content": str,
-        "time": int,
-        "author": UserSummary,
-    }
-    id: int
-    content: str
-    author: UserSummary
-    time: int
+    description: str
+    notice: str
+    contact: Dict[str, str]
+    joinPermission: int
 
 class TeamDetail(TeamSummary):
     __type_dict__ = {
         **TeamSummary.__type_dict__,
         "createTime": int,
         "master": UserSummary,
-        # "setting": {str: Union[str, int]},
+        "setting": TeamSettings,
         "premiumUntil": int,
         "type": int,
         "memberCount": int
     }
     createTime: int
     master: UserSummary
-    # setting: Dict[str, Union[str, int]]
+    setting: TeamSettings
     premiumUntil: int | None
     type: int
     memberCount: int
-
-class PostSummary(LuoguType):
-    __type_dict__ = {
-        "id": int,
-        "title": str,
-        "author": UserSummary,
-        "createTime": int,
-        "updateTime": int,
-        "forum": Forum,
-        "topped": bool,
-        "valid": bool,
-        "locked": bool,
-        "replyCount": int,
-        "recentReply": Reply,
-    }
-    id: int
-    title: str
-    content: str
-    author: UserSummary
-    createTime: int
-    updateTime: int
-    forum: Forum
-    topped: bool
-    valid: bool
-    locked: bool
-    replyCount: int
-    recentReply: Reply
 
 class Post(PostSummary):
     __type_dict__ = {
@@ -748,6 +789,50 @@ class Image(LuoguType):
     uploadTime: int
     size: int
 
+class Article(LuoguType):
+    __type_dict__ = {
+        "lid": str,
+        "title": str,
+        "time": int,
+        "author": UserSummary,
+        "upvote": int,
+        "replyCount": int,
+        "favorCount": int,
+        "category": int,
+        "status": int,
+        "solutionFor": ProblemSketch,
+        "promoteStatus": int,
+        # "collection": Optional[Any],
+        "content": str,
+        "categoryOld": str,
+        "contentFull": bool,
+        "adminNote": str,
+        "adminComment": str,
+        "voted": int,
+        "canReply": bool,
+        "canEdit": bool
+    }
+    lid: str
+    title: str
+    time: int
+    author: UserSummary
+    upvote: int
+    replyCount: int
+    favorCount: int
+    category: int
+    status: int
+    solutionFor: ProblemSketch
+    promoteStatus: int
+    # collection: Optional[Any]
+    content: str
+    categoryOld: str
+    contentFull: bool
+    adminNote: str | None
+    adminComment: str
+    voted: int | None
+    canReply: bool
+    canEdit: bool
+
 class TagDetail(LuoguType):
     __type_dict__ = {
         "id": int,
@@ -785,30 +870,31 @@ class ProblemListRequestResponse(Response):
 class ProblemDataRequestResponse(LuoguType):
     __type_dict__ = {
         "problem": ProblemDetails,
-        "contest": ContestSummary,
-        "discussions": [PostSummary],
+        "translations": {str: ProblemContent},
         "bookmarked": bool,
+        "contest": ContestSummary,
         "vjudgeUsername": str,
-        "recommendations": [ProblemSummary], 
         "lastLanguage": int,
         "lastCode": str,
-        "privilegedTeams": [TeamSummary],
-        "userTranslation": str,
+        "recommendations": [ProblemSketch],
+        "forum": Forum,
+        "discussions": [PostSketch],
+        "canEdit": bool
     }
     problem: ProblemDetails
-    contest: ContestSummary
-    discussions: List[PostSummary]
+    translations: Dict[str, ProblemContent]
     bookmarked: bool
-    vjudgeUsername: str
-    recommendations: List[ProblemSummary]
+    contest: ContestSummary | None
+    vjudgeUsername: str | None
     lastLanguage: int
     lastCode: str
-    privilegedTeams: List[TeamSummary]
-    userTranslation: str
+    recommendations: List[ProblemSummary]
+    discussions: List[PostSummary]
+    canEdit: bool
 
 class ProblemSettingsRequestResponse(Response):
     __type_dict__ = {
-        "problemDetails": ProblemDetails,
+        # "problemDetails": LegacyProblemDetails,
         "problemSettings": ProblemSettings,
         "testCaseSettings": TestCaseSettings,
         # "clonedFrom": dict,
@@ -843,6 +929,20 @@ class UpdateTestCasesSettingsResponse(Response):
     testCases: List[TestCase]
     scoringStrategy: ScoringStrategy
     subtaskScoringStrategies: Dict[str, ScoringStrategy]
+
+class ProblemSolutionRequestResponse(Response):
+    __type_dict__ = {
+        "perPage": int,
+        "count": int,
+        "solutions": [Article],
+        "problem": ProblemSketch,
+        "acceptSolution": bool,
+    }
+    perPage: int
+    count: int
+    solutions: List[Article]
+    problem: ProblemSketch
+    acceptSolution: bool
 
 class ProblemSetDataRequestResponse(Response):
     __type_dict__ = {
@@ -915,21 +1015,22 @@ class TeamDataRequestResponse(Response):
         "team": TeamDetail,
         "currentTeamMember": TeamMember,
         "latestDiscussions": [PostSummary],
-        # "joinRequest": Optional[Any],  # TODO: Define the type
-        # "groups": List['Group'],
-        # "usages": {
-        #    "problem": Tuple[int, int],
-        #    "training": Tuple[int, int],
-        #    "contest": Tuple[int, int],
-        #    "file": Tuple[int, int]
-        # }
+        "groups": [Group],
+        "usages": {str: (int, int)}
     }
     team: TeamDetail
     currentTeamMember: TeamMember | None
     latestDiscussions: PostSummary | None
-    # joinRequest: Optional[Any]  # TODO: Define the type
-    # groups: List['Group']
-    # usages: Dict[str, Tuple[int, int]]
+    groups: List[Group]
+    usages: Dict[str, Tuple[int, int]]
+
+class PasteRequestResponse(Response):
+    __type_dict__ = {
+        "paste": Paste,
+        "canEdit": bool
+    }
+    paste: Paste
+    canEdit: bool
 
 class TagRequestResponse(Response):
     __type_dict__ = {

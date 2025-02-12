@@ -130,8 +130,8 @@ API Implementation Status
 - [x] Paste API
   - [x] get_paste
 
-- [x] Image API
-  - [x] get_image
+- [x] Artical API
+  - [x] get_solution
 
 - [x] User API
   - [x] get_user
@@ -153,6 +153,7 @@ API Implementation Status
 
 - [x] Miscellaneous
   - [x] get_tags
+  - [x] get_image
   - [ ] get_captcha
   - [ ] sign_up
 

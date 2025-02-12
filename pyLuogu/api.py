@@ -357,7 +357,17 @@ class luoguAPI:
             path: str
     ):
         raise NotImplementedError
-        
+
+    def get_problem_solution(self, pid: str, page: int | None = None) -> ProblemSolutionRequestResponse:
+        params = ListRequestParams(json={"page": page})
+        res = self._send_request(endpoint=f"problem/solution/{pid}", params=params)
+
+        res["count"] = res["solutions"]["count"]
+        res["perPage"] = res["solutions"]["perPage"]
+        res["solutions"] = res["solutions"]["result"]
+
+        return ProblemSolutionRequestResponse(res)
+
     def get_user(self, uid: int) -> UserDataRequestResponse:
         res = self._send_request(endpoint=f"user/{uid}")
         
@@ -437,13 +447,13 @@ class luoguAPI:
         res = self._send_request(endpoint=f"team/{tid}")
         return TeamDataRequestResponse(res)
 
-    def get_paste(self, id: int) -> Paste:
+    def get_paste(self, id: str) -> PasteRequestResponse:
         res = self._send_request(endpoint=f"paste/{id}")
-        return Paste(res)
+        return PasteRequestResponse(res)
     
     def get_image(self, id: int) -> Image:
         res = self._send_request(endpoint=f"/api/image/detail/{id}")
-        return Image(res)
+        return Image(res["image"])
 
     def get_tags(self) -> TagRequestResponse:
         res = self._send_request(endpoint="/_lfe/tags")
