@@ -1,4 +1,4 @@
-from typing import List, Tuple, Literal, Dict, Union, Optional, Any
+from typing import List, Tuple, Literal, Dict, TypeVar, Generic
 
 from .bits.ultility import JsonSerializable, Printable
 
@@ -48,6 +48,7 @@ __all__ = [
     "TagType",
     "TeamDetail",
     "ProblemListRequestResponse",
+    "ProblemSetListRequestResponse",
     "ProblemDataRequestResponse",
     "ProblemSettingsRequestResponse",
     "ProblemModifiedResponse",
@@ -55,18 +56,23 @@ __all__ = [
     "ProblemSetDataRequestResponse",
     "ProblemSolutionRequestResponse",
     "ContestDataRequestResponse",
+    "ContestListRequestResponse",
     "UserDataRequestResponse",
     "DiscussionRequestResponse",
     "ActivityRequestResponse",
     "TeamDataRequestResponse",
+    "TeamMemberRequestResponse",
     "PasteRequestResponse",
+    "ArticleDataRequestResponse",
     "TagRequestResponse",
     "LuoguCookies",
     "ProblemType",
+    "ProblemSetType",
     "TransferProblemType"
 ]
 
 ProblemType = Literal["P", "U", "T", "B", "CF", "AT", "UVA", "SP"]
+ProblemSetType = Literal["official", "select"]
 TransferProblemType = Literal["P", "U", "B"] | int
 
 class LuoguType(JsonSerializable, Printable):
@@ -80,6 +86,18 @@ class RequestParams(LuoguType):
 
 class Response(LuoguType):
     pass
+
+T_of_list = TypeVar("T_of_list", bound=LuoguType)
+
+class PagedList(LuoguType, Generic[T_of_list]):
+    __type_dict__ = {
+        "results": [T_of_list],
+        "count": int,
+        "perPage": int,
+    }
+    results: List[T_of_list]
+    count: int
+    perPage: int
 
 class ListRequestParams(RequestParams):
     __type_dict__ = {
@@ -359,7 +377,7 @@ class ProblemSetSummary(LuoguType):
         "provider": Provider
     }
     createTime: int
-    deadline: Optional[int]
+    deadline: int | None
     problemCount: int
     marked: bool
     markCount: int
@@ -368,7 +386,7 @@ class ProblemSetSummary(LuoguType):
     type: int
     provider: Provider
 
-class ContestSummary(LuoguType):
+class ContestSketch(LuoguType):
     __type_dict__ = {
         "id": int,
         "name": str,
@@ -450,12 +468,12 @@ class Prize(LuoguType):
 
 class EloRatingSummary(LuoguType):
     __type_dict__ = {
-        "contest": ContestSummary,
+        "contest": ContestSketch,
         "rating": int,
         "time": int,
         "latest": bool
     }
-    contest: ContestSummary
+    contest: ContestSketch
     rating: int
     time: int
     latest: bool
@@ -650,36 +668,41 @@ class ProblemSetDetails(ProblemSetSummary):
     problems: List[ProblemSummary]
     # userScore: Optional[Dict[str, Union[UserSummary, int, Dict[str, Optional[int]], Dict[str, bool]]]]
     
+class ContestSummary(ContestSketch):
+    __type_dict__ = {
+        **ContestSketch.__type_dict__,
+        "ruleType": int,
+        "visibilityType": int,
+        "invitationCodeType": int,
+        "rated": bool,
+        "problemCount": int,
+        "host": Provider,
+    }
+    ruleType: int
+    visibilityType: int
+    invitationCodeType: int
+    rated: bool
+    problemCount: int
+    host: Provider
+
 class ContestDetails(ContestSummary):
     __type_dict__ = {
         **ContestSummary.__type_dict__,
         "description": str,
         "totalParticipants": int,
+        "eloThreshold": int,
         "eloDone": bool,
         "canEdit": bool,
-        "ruleType": int,
-        "visibilityType": int,
-        "invitationCodeType": int,
-        "rated": bool,
-        "eloThreshold": int,
-        "problemCount": int,
         "problems": [ProblemSummary],
         "isScoreboardFrozen": bool,
-        "host": Provider,
     }
     description: str
     totalParticipants: int
     eloDone: bool
+    eloThreshold: int
     canEdit: bool
-    ruleType: int
-    visibilityType: int
-    invitationCodeType: int
-    isScoreboardFrozen: bool
-    rated: bool
-    eloThreshold: Optional[int]
-    problemCount: int
     problems: List[ProblemSummary]
-    host: Provider
+    isScoreboardFrozen: bool
 
 class ContestSettings(LuoguType):
     __type_dict__ = {
@@ -703,9 +726,9 @@ class ContestSettings(LuoguType):
     startTime: int
     endTime: int
     rated: bool
-    ratingGroup: Optional[str]
-    eloThreshold: Optional[int]
-    eloCenter: Optional[int]
+    ratingGroup: str | None
+    eloThreshold: int | None
+    eloCenter: int | None
 
 class Activity(LuoguType):
     __type_dict__ = {
@@ -860,9 +883,19 @@ class ProblemListRequestResponse(Response):
         "problems": [ProblemSummary],
         "count": int,
         "perPage": int,
-        "page": int
     }
     problems : List[ProblemSummary]
+    count : int
+    perPage: int
+
+class ProblemSetListRequestResponse(Response):
+    __type_dict__ = {
+        "trainings": [ProblemSetSummary],
+        "count": int,
+        "perPage": int,
+        "page": int
+    }
+    problems : List[ProblemSetSummary]
     count : int
     perPage: int
     page: int
@@ -872,7 +905,7 @@ class ProblemDataRequestResponse(LuoguType):
         "problem": ProblemDetails,
         "translations": {str: ProblemContent},
         "bookmarked": bool,
-        "contest": ContestSummary,
+        "contest": ContestSketch,
         "vjudgeUsername": str,
         "lastLanguage": int,
         "lastCode": str,
@@ -884,7 +917,7 @@ class ProblemDataRequestResponse(LuoguType):
     problem: ProblemDetails
     translations: Dict[str, ProblemContent]
     bookmarked: bool
-    contest: ContestSummary | None
+    contest: ContestSketch | None
     vjudgeUsername: str | None
     lastLanguage: int
     lastCode: str
@@ -972,6 +1005,16 @@ class ContestDataRequestResponse(Response):
     joined : bool
     accessLevel : int
 
+class ContestListRequestResponse(Response):
+    __type_dict__ = {
+        "contests": [ContestSummary],
+        "count": int,
+        "perPage": int
+    }
+    contests: List[ContestSummary]
+    count: int
+    perPage: int
+
 class UserDataRequestResponse(LuoguType):
     __type_dict__ = {
         "user": UserDetails,
@@ -1024,12 +1067,40 @@ class TeamDataRequestResponse(Response):
     groups: List[Group]
     usages: Dict[str, Tuple[int, int]]
 
+class TeamMemberRequestResponse(Response):
+    __type_dict__ = {
+        "members": [TeamMember],
+        "perPage": int,
+        "count": int,
+        "group": Group,
+        # "groupMemberCount": {int: int}
+    }
+    member: TeamMember
+    perPage: int
+    count: int
+    group: Group
+    # groupMemberCount: Dict[int, int]
+
 class PasteRequestResponse(Response):
     __type_dict__ = {
         "paste": Paste,
         "canEdit": bool
     }
     paste: Paste
+    canEdit: bool
+
+class ArticleDataRequestResponse(Response):
+    __type_dict__ = {
+        "article": Article,
+        "favored": bool,
+        "voted": int,
+        "canReply": bool,
+        "canEdit": bool
+    }
+    article: Article
+    favored: bool
+    voted: int | None
+    canReply: bool
     canEdit: bool
 
 class TagRequestResponse(Response):

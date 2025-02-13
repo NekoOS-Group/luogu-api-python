@@ -204,34 +204,6 @@ class luoguAPI:
 
         return ProblemListRequestResponse(res)
 
-    def get_created_problem_list(
-            self, page: int | None = None
-    ) -> ProblemListRequestResponse:
-        params = ListRequestParams(json={"page": page})
-        res = self._send_request(endpoint="api/user/createdProblems", params=params)
-
-        res["count"] = res["problems"]["count"]
-        res["perPage"] = res["problems"]["perPage"]
-        res["problems"] = res["problems"]["result"]
-
-        return ProblemListRequestResponse(res)
-
-    def get_team_problem_list(
-            self, tid: int,
-            page: int | None = None
-    ) -> ProblemListRequestResponse:
-        params = ListRequestParams(json={"page": page})
-        res = self._send_request(
-            endpoint=f"api/team/problems/{tid}", 
-            params=params
-        )
-
-        res["count"] = res["problems"]["count"]
-        res["perPage"] = res["problems"]["perPage"]
-        res["problems"] = res["problems"]["result"]
-
-        return ProblemListRequestResponse(res)
-
     def get_problem(
             self, pid: str,
             contest_id: int | None = None
@@ -358,7 +330,7 @@ class luoguAPI:
     ):
         raise NotImplementedError
 
-    def get_problem_solution(self, pid: str, page: int | None = None) -> ProblemSolutionRequestResponse:
+    def get_problem_solutions(self, pid: str, page: int | None = None) -> ProblemSolutionRequestResponse:
         params = ListRequestParams(json={"page": page})
         res = self._send_request(endpoint=f"problem/solution/{pid}", params=params)
 
@@ -411,6 +383,23 @@ class luoguAPI:
         res["training"]["problems"] = [x.get("problem") for x in res["training"]["problems"]]
         return ProblemSetDataRequestResponse(res)
     
+    def get_problem_set_list(
+            self,
+            page: int | None = None,
+            keyword: str | None = None,
+            type: ProblemSetType | None = None, 
+            params: ProblemSetListRequestParams | None = None
+    ):
+        if params is None:
+            params = ProblemSetListRequestParams(json={
+                "page": page,
+                "keyword": keyword,
+                "type": type
+            })
+        res = self._send_request(endpoint="training/list", params=params)
+        res["trainings"]["trainings"] = res["trainings"]["result"]
+        return ProblemSetListRequestResponse(res["trainings"])
+    
     def get_contest(self, id: int) -> ContestDataRequestResponse:
         res = self._send_request(endpoint=f"contest/{id}")
 
@@ -418,6 +407,12 @@ class luoguAPI:
         res["contest"]["isScoreboardFrozen"] = res["isScoreboardFrozen"]
         return ContestDataRequestResponse(res)
     
+    def get_contest_list(self, page: int | None = None):
+        params = ListRequestParams(json={"page": page})
+        res = self._send_request(endpoint="contest/list", params=params)
+        res["contests"]["contests"] = res["contests"]["result"]
+        return ContestListRequestResponse(res["contests"])
+            
     def get_disscussion(self,
             id: int,
             page: int | None = None,
@@ -447,14 +442,79 @@ class luoguAPI:
         res = self._send_request(endpoint=f"team/{tid}")
         return TeamDataRequestResponse(res)
 
+    def get_team_member_list(self, tid: int) -> List[TeamMember]:
+        res = self._send_request(endpoint=f"api/team/members/{tid}")
+        res["perPage"] = res["members"]["perPage"]
+        res["count"] = res["members"]["count"]
+        res["members"] = res["members"]["result"]
+
+        return TeamMemberRequestResponse(res)
+
+    def get_team_problem_list(
+            self, tid: int,
+            page: int | None = None
+    ) -> ProblemListRequestResponse:
+        params = ListRequestParams(json={"page": page})
+        res = self._send_request(
+            endpoint=f"api/team/problems/{tid}", 
+            params=params
+        )
+
+        res["count"] = res["problems"]["count"]
+        res["perPage"] = res["problems"]["perPage"]
+        res["problems"] = res["problems"]["result"]
+
+        return ProblemListRequestResponse(res)
+
+    def get_team_problem_set_list(self, tid: int, page: int | None = None) -> ProblemSetListRequestResponse:
+        params = ListRequestParams(json={"page": page})
+        res = self._send_request(endpoint=f"api/team/trainings/{tid}", params=params)
+        res["trainings"]["trainings"] = res["trainings"]["result"]
+        return ProblemSetListRequestResponse(res["trainings"])
+    
+    def get_team_contest_list(self, tid: int, page: int | None = None) -> ContestListRequestResponse:
+        params = ListRequestParams(json={"page": page})
+        res = self._send_request(endpoint=f"api/team/contests/{tid}", params=params)
+        res["contests"]["contests"] = res["contests"]["result"]
+        return ContestListRequestResponse(res["contests"])
+
     def get_paste(self, id: str) -> PasteRequestResponse:
         res = self._send_request(endpoint=f"paste/{id}")
         return PasteRequestResponse(res)
+
+    def get_article(self, lid: str) -> ArticleDataRequestResponse:
+        res = self._send_request(endpoint=f"article/{lid}")
+        return ArticleDataRequestResponse(res)
     
-    def get_image(self, id: int) -> Image:
-        res = self._send_request(endpoint=f"/api/image/detail/{id}")
-        return Image(res["image"])
+    def get_created_problem_list(
+            self, page: int | None = None
+    ) -> ProblemListRequestResponse:
+        params = ListRequestParams(json={"page": page})
+        res = self._send_request(endpoint="api/user/createdProblems", params=params)
+
+        res["count"] = res["problems"]["count"]
+        res["perPage"] = res["problems"]["perPage"]
+        res["problems"] = res["problems"]["result"]
+
+        return ProblemListRequestResponse(res)
+
+    def get_created_problem_set_list(self, page: int | None = None):
+        params = ListRequestParams(json={"page": page})
+        res = self._send_request(endpoint="api/user/createdTrainings", params=params)
+
+        res["trainings"]["trainings"] = res["trainings"]["result"]
+        return ProblemSetListRequestResponse(res["trainings"])
+    
+    def get_created_contest_list(self, page: int | None = None) -> ContestListRequestResponse:
+        params = ListRequestParams(json={"page": page})
+        res = self._send_request(endpoint="api/user/createdContests", params=params)
+        res["contests"]["contests"] = res["contests"]["result"]
+        return ContestListRequestResponse(res["contests"])
 
     def get_tags(self) -> TagRequestResponse:
         res = self._send_request(endpoint="/_lfe/tags")
         return TagRequestResponse(res)
+
+    def get_image(self, id: int) -> Image:
+        res = self._send_request(endpoint=f"/api/image/detail/{id}")
+        return Image(res["image"])

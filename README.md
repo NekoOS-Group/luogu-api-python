@@ -108,7 +108,6 @@ API Implementation Status
 
 - [x] Problem API
   - [x] get_problem_list
-  - [x] get_team_problem_list 
   - [x] get_problem
   - [x] get_problem_settings
   - [x] update_problem_settings
@@ -121,9 +120,11 @@ API Implementation Status
 
 - [x] Problem Set API
   - [x] get_problem_set
+  - [x] get_problem_set_list
 
 - [x] Contest API
   - [x] get_contest
+  - [x] get_contest_list
 
 - [x] User API
   - [x] get_user
@@ -141,12 +142,19 @@ API Implementation Status
 
 - [x] Team API
   - [x] get_team
+  - [x] get_team_member_list
+  - [x] get_team_problem_list 
+  - [x] get_team_problem_set_list
+  - [x] get_team_contest_list
 
 - [x] Paste API
   - [x] get_paste
 
 - [x] Artical API
-  - [x] get_solution
+  - [x] get_article
+  - [ ] get_article_list
+  - [ ] get_user_article_list
+  - [x] get_problem_solutions
 
 - [x] User Operations
   - [ ] login
@@ -154,9 +162,10 @@ API Implementation Status
   - [x] me
   - [ ] submit_code
   - [x] get_created_problem_list
-  - [ ] get_created_problemset_list
-  - [ ] get_created_content_list
-  - [ ] update_setting
+  - [x] get_created_problemset_list
+  - [x] get_created_content_list
+  - [ ] get_created_article_list
+  - [ ] update_my_setting
 
 - [x] Miscellaneous
   - [x] get_tags
