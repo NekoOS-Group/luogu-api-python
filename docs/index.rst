@@ -6,10 +6,18 @@
 luogu-api-python documentation
 ==============================
 
-``luogu-api-python`` is a Python implementation of the Luogu API. It provides an interface to interact with the Luogu online judge system, allowing users to programmatically manage problems and user operations on Luogu. This library aims to simplify automating tasks on Luogu with easy-to-use methods and classes.
+``luogu-api-python`` is a community-driven Python implementation of the Luogu API. It provides an interface to interact with the Luogu online judge system, allowing users to programmatically manage problems and user operations on Luogu. This library aims to simplify automating tasks on Luogu with easy-to-use methods and classes.
+
+Contents
+==========
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   
+   quickstart
+   examples
+   about
+
+
 
 
