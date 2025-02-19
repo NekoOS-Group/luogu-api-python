@@ -128,14 +128,13 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-*cookies.json
-*openai_key
-*qwen_key
+*cookies*.json
+*_key
 *cache/
 .idea
 .vscode
 
 .DS_Store
 release
-examples/test_api.py
+examples/test_api*.py
 luogu-api.d.ts

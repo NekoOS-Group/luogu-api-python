@@ -1,3 +1,4 @@
+import re
 import json
 import asyncio
 from typing import List, Literal
@@ -44,15 +45,15 @@ class asyncLuoguAPI:
             params=param_final,
             json=data,
         )
-        
-        if method == "GET":
-            logger.info(f"Async GET from {url} with params: {param_final}")
-        else:
-            data_str = json.dumps(data)
-            payload_str = data_str if data and len(data_str) < 50 else data_str[:50] + "..."
-            logger.info(f"Async POST to {url} with payload: {payload_str}")
 
         for attempt in range(self.max_retries):
+            if method == "GET":
+                logger.info(f"({attempt}/{self.max_retries}) Async GET from {url} with params: {param_final}")
+            else:
+                data_str = json.dumps(data)
+                payload_str = data_str if data and len(data_str) < 50 else data_str[:50] + "..."
+                logger.info(f"({attempt}/{self.max_retries}) Async POST to {url} with payload: {payload_str}")
+            
             try:
                 response = await self.client.send(request)
             except httpx.TimeoutException as e:
@@ -65,6 +66,12 @@ class asyncLuoguAPI:
 
             try:
                 response.raise_for_status()
+                logger.debug(response.text)
+                
+                new_C3VK = await self._get_C3VK(response)
+                if new_C3VK is not None:
+                    continue
+                
                 try:
                     res_json = response.json()
                 except json.JSONDecodeError:
@@ -109,39 +116,61 @@ class asyncLuoguAPI:
                 else:
                     raise RequestError("HTTP error") from e
         
-        logger.error("Failed to send request after 10 attempts")
-        raise RequestError("Failed to send request after 10 attempts")
+        logger.error(f"Failed to send request after {self.max_retries} attempts")
+        raise RequestError(f"Failed to send request after {self.max_retries} attempts")
 
     async def _get_headers(self, method: str) -> dict:
+        if self.x_csrf_token is None:
+            await self._get_csrf()
         headers = {
             "User-Agent": "luogu_bot",
             "x-lentille-request": "content-only",
             "x-luogu-type": "content-only",
+            "x-csrf-token": self.x_csrf_token
         }
         if method != "GET":
-            if not self.x_csrf_token:
-                await self._get_csrf()
             headers.update({
                 "Content-Type": "application/json",
                 "referer": "https://www.luogu.com.cn/",
-                "x-csrf-token": self.x_csrf_token
             })
         return headers
 
-    async def _get_csrf(self) -> str:
+    async def _get_C3VK(self, response: httpx.Response) -> str | None:
+        result = re.search(r"C3VK=(.*); path", response.text)
+        if result:
+            self.cookies["C3VK"] = result.group(1)
+            self.client.cookies.set("C3VK", result.group(1))
+            logger.info(f"C3VK token fetched successfully {result.group(1)}")
+            return result.group(1)
+        else:
+            return None
+
+    async def _get_csrf(self, endpoint="") -> str:
         headers = {
             "User-Agent": "luogu_bot",
         }
 
         for attempt in range(self.max_retries):
             try:
-                response = await self.client.get(self.base_url, headers=headers, cookies=self.cookies)
+                logger.info(f"({attempt}/{self.max_retries}) Async GET CSRF token from {self.base_url + endpoint}")
+                response = await self.client.get(
+                    self.base_url + endpoint, 
+                    headers=headers, 
+                    cookies=self.cookies
+                )
+                
                 response.raise_for_status()
+
+                new_C3VK = await self._get_C3VK(response)
+                if new_C3VK is not None:
+                    continue
+                
                 soup = bs4.BeautifulSoup(response.text, "html.parser")
                 csrf_meta = soup.select_one("meta[name='csrf-token']")
+
                 if csrf_meta and "content" in csrf_meta.attrs:
                     self.x_csrf_token = csrf_meta["content"]
-                    logger.info("CSRF token fetched successfully")
+                    logger.info(f"new CSRF token : {self.x_csrf_token}")
                     return self.x_csrf_token
                 else:
                     logger.warning("CSRF token not found, retrying...")
@@ -153,8 +182,8 @@ class asyncLuoguAPI:
                 logger.error(f"HTTP error: {e}")
                 raise RequestError("HTTP error") from e
 
-        logger.error("Failed to fetch CSRF token after 5 attempts")
-        raise RequestError("Failed to fetch CSRF token after 5 attempts")
+        logger.error(f"Failed to fetch CSRF token after {self.max_retries} attempts")
+        raise RequestError(f"Failed to fetch CSRF token after {self.max_retries} attempts")
 
     async def login(
             self, user_name: str, password: str,
@@ -195,18 +224,6 @@ class asyncLuoguAPI:
 
         return ProblemListRequestResponse(res)
 
-    async def get_created_problem_list(
-            self, page: int | None = None
-    ) -> ProblemListRequestResponse:
-        params = ListRequestParams(json={"page": page})
-        res = await self._send_request(endpoint="api/user/createdProblems", params=params)
-
-        res["count"] = res["problems"]["count"]
-        res["perPage"] = res["problems"]["perPage"]
-        res["problems"] = res["problems"]["result"]
-
-        return ProblemListRequestResponse(res)
-
     async def get_team_problem_list(
             self, tid: int,
             page: int | None = None
@@ -229,6 +246,10 @@ class asyncLuoguAPI:
     ) -> ProblemDataRequestResponse:
         params = ProblemRequestParams(json={"contest_id": contest_id})
         res = await self._send_request(endpoint=f"problem/{pid}", params=params)
+
+        res["problem"]["limits"] = list(zip(
+            res["problem"]["limits"]["time"], res["problem"]["limits"]["memory"]
+        ) )
 
         return ProblemDataRequestResponse(res)
 
@@ -344,7 +365,29 @@ class asyncLuoguAPI:
             path: str
     ):
         raise NotImplementedError
-        
+    
+    async def get_problem_set(self, id: int) -> ProblemSetDataRequestResponse:
+        res = await self._send_request(endpoint=f"/training/{id}")
+        res["training"]["problems"] = [x.get("problem") for x in res["training"]["problems"]]
+        return ProblemSetDataRequestResponse(res)
+    
+    async def get_problem_set_list(
+            self,
+            page: int | None = None,
+            keyword: str | None = None,
+            type: ProblemSetType | None = None, 
+            params: ProblemSetListRequestParams | None = None
+    ):
+        if params is None:
+            params = ProblemSetListRequestParams(json={
+                "page": page,
+                "keyword": keyword,
+                "type": type
+            })
+        res = await self._send_request(endpoint="training/list", params=params)
+        res["trainings"]["trainings"] = res["trainings"]["result"]
+        return ProblemSetListRequestResponse(res["trainings"])
+    
     async def get_user(self, uid: int) -> UserDataRequestResponse:
         res = await self._send_request(endpoint=f"user/{uid}")
         return UserDataRequestResponse(res)
@@ -373,9 +416,69 @@ class asyncLuoguAPI:
         res = await self._send_request(endpoint="api/user/search", params=params)
         return [UserSummary(user) for user in res["users"]]
 
+    async def get_contest(self, id: int) -> ContestDataRequestResponse:
+        res = await self._send_request(endpoint=f"contest/{id}")
+
+        res["contest"]["problems"] = [x.get("problem") for x in res["contestProblems"]]
+        res["contest"]["isScoreboardFrozen"] = res["isScoreboardFrozen"]
+        return ContestDataRequestResponse(res)
+    
     async def me(self) -> UserDetails:
         return (await self.get_user(self.cookies["_uid"].split("_")[0])).user
 
+    async def get_created_problem_list(
+            self, page: int | None = None
+    ) -> ProblemListRequestResponse:
+        params = ListRequestParams(json={"page": page})
+        res = await self._send_request(endpoint="api/user/createdProblems", params=params)
+
+        res["count"] = res["problems"]["count"]
+        res["perPage"] = res["problems"]["perPage"]
+        res["problems"] = res["problems"]["result"]
+
+        return ProblemListRequestResponse(res)
+    
+    async def get_created_problem_set_list(self, page: int | None = None):
+        params = ListRequestParams(json={"page": page})
+        res = await self._send_request(endpoint="api/user/createdTrainings", params=params)
+
+        res["trainings"]["trainings"] = res["trainings"]["result"]
+        return ProblemSetListRequestResponse(res["trainings"])
+    
+    async def get_created_contest_list(self, page: int | None = None) -> ContestListRequestResponse:
+        params = ListRequestParams(json={"page": page})
+        res = await self._send_request(endpoint="api/user/createdContests", params=params)
+        res["contests"]["contests"] = res["contests"]["result"]
+        return ContestListRequestResponse(res["contests"])
+
+    async def submit_code(
+            self,
+            pid: str,
+            code: str,
+            contest_id: int | None = None,
+            lang: str | None = None,
+            enableO2: bool = True,
+    ) -> SubmitCodeResponse:
+        await self._get_csrf(f"/problem/{pid}")
+        res = await self._send_request(
+            endpoint=f"/fe/api/problem/submit/{pid}",
+            params=ProblemRequestParams(json={"contest_id": contest_id}),
+            method="POST",
+            data={
+                "code": code,
+                "lang": lang,
+                "enableO2": enableO2
+            }
+        )
+        return SubmitCodeResponse(res)
+    
+    async def submit_code_via_openluogu():
+        raise NotImplementedError
+    
+    async def get_record(self, rid: str) -> RecordRequestResponse:
+        res = await self._send_request(endpoint=f"record/{rid}")
+        return RecordRequestResponse(res)
+    
     async def get_tags(self) -> TagRequestResponse:
         res = await self._send_request(endpoint="/_lfe/tags")
         return TagRequestResponse(res)

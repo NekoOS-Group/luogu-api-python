@@ -6,11 +6,12 @@ __all__ = [
     "LuoguType",
     "RequestParams",
     "Response",
+    "PagedList",
     "ListRequestParams",
-    "ProblemListRequestParams",
+    "ProblemListRequestParams", 
     "ProblemSetListRequestParams",
     "UserListRequestParams",
-    "RecordListRequestParams",
+    "RecordListRequestParams", 
     "ThemeListRequestParams",
     "ArticleListRequestParams",
     "BlogListRequestParams",
@@ -19,52 +20,70 @@ __all__ = [
     "UserSearchRequestParams",
     "DiscussionRequestParams",
     "ActivityReuqestParams",
+    "ProblemSketch",
     "ProblemSummary",
     "VjudgeSummary",
     "UserSummary",
     "TeamSummary",
+    "ProblemContent",
+    "Group",
     "TeamMember",
     "Provider",
     "Attachment",
+    "ProblemSetSummary",
+    "ContestSketch", 
+    "Forum",
+    "Reply",
+    "PostSketch",
+    "PostSummary",
+    "Prize",
+    "EloRatingSummary",
     "ProblemDetails",
     "TestCase",
     "ScoringStrategy",
     "ProblemSettings",
     "TestCaseSettings",
     "UserDetails",
-    "ProblemSetSummary",
     "ProblemSetDetails",
     "ContestSummary",
     "ContestDetails",
     "ContestSettings",
     "Activity",
-    "Forum",
-    "Reply",
-    "PostSummary",
+    "TeamSettings",
+    "TeamDetail",
+    "Record",
+    "TestCaseStatus",
+    "SubtaskStatus",
+    "CompileResult",
+    "JudgeResult",
+    "RecordStatus",
+    "RecordDetails",
     "Post",
     "Paste",
     "Image",
+    "Article",
     "TagDetail",
     "TagType",
-    "TeamDetail",
     "ProblemListRequestResponse",
-    "ProblemSetListRequestResponse",
+    "ProblemSetListRequestResponse", 
     "ProblemDataRequestResponse",
     "ProblemSettingsRequestResponse",
     "ProblemModifiedResponse",
     "UpdateTestCasesSettingsResponse",
-    "ProblemSetDataRequestResponse",
     "ProblemSolutionRequestResponse",
+    "ProblemSetDataRequestResponse",
     "ContestDataRequestResponse",
     "ContestListRequestResponse",
     "UserDataRequestResponse",
     "DiscussionRequestResponse",
     "ActivityRequestResponse",
-    "TeamDataRequestResponse",
+    "TeamDataRequestResponse", 
     "TeamMemberRequestResponse",
     "PasteRequestResponse",
     "ArticleDataRequestResponse",
+    "RecordRequestResponse",
     "TagRequestResponse",
+    "SubmitCodeResponse",
     "LuoguCookies",
     "ProblemType",
     "ProblemSetType",
@@ -305,6 +324,13 @@ class ProblemContent(LuoguType):
     formatO: str
     hint: str
     locale: str
+
+    def get_markdown(self):
+        return "\n## 题目背景\n" + str(self.background) + \
+        "\n## 题目描述\n" + str(self.description) + \
+        "\n## 输入格式\n" + str(self.formatI) + \
+        "\n## 输出格式\n" + str(self.formatO) + \
+        "\n## 数据范围与提示\n" + str(self.hint)
 
 class Group(LuoguType):
     __type_dict__ = {
@@ -773,6 +799,119 @@ class TeamDetail(TeamSummary):
     type: int
     memberCount: int
 
+class Record(LuoguType):
+    __type_dict__ = {
+        "time": int,
+        "memory": int,
+        "problem": ProblemSketch,
+        "contest": ContestSummary,
+        "sourceCodeLength": int,
+        "submitTime": int,
+        "language": int,
+        "user": UserSummary,
+        "id": int,
+        "status": int,
+        "enableO2": bool,
+        "score": int
+    }
+    time: int | None
+    memory: int | None
+    problem: ProblemSketch
+    contest: ContestSummary | None
+    sourceCodeLength: int
+    submitTime: int
+    language: int
+    user: UserSummary | None
+    id: int
+    status: int
+    enableO2: bool
+    score: int | None
+
+class TestCaseStatus(LuoguType):
+    __type_dict__ = {
+        "id": int,
+        "status": int,
+        "time": int,
+        "memory": int,
+        "score": int,
+        "signal": int,
+        "exitCode": int,
+        "description": str,
+        "subtaskID": int
+    }
+    id: int
+    status: int
+    time: int
+    memory: int
+    score: int
+    signal: int | None
+    exitCode: int
+    description: str | int
+    subtaskID: int
+
+class SubtaskStatus(LuoguType):
+    __type_dict__ = {
+        "id": int,
+        "score": int,
+        "status": int,
+        "testCases": [TestCaseStatus],
+        "judger": str,
+        "time": int,
+        "memory": int
+    }
+    id: int
+    score: int
+    status: int
+    testCases: List[TestCaseStatus]
+    judger: str | None
+    time: int
+    memory: int
+
+class CompileResult(LuoguType):
+    __type_dict__ = {
+        "success": bool,
+        "message": str,
+        "opt2": bool
+    }
+    success: bool
+    message: str | None
+    opt2: bool
+
+class JudgeResult(LuoguType):
+    __type_dict__ = {
+        # "subtasks": [SubtaskStatus],
+        "finishedCaseCount": int,
+        "status": int,
+        "time": int,
+        "memory": int,
+        "score": int
+    }
+    # subtasks: List[SubtaskStatus]
+    finishedCaseCount: int
+    status: int
+    time: int
+    memory: int
+    score: int
+
+class RecordStatus(LuoguType):
+    __type_dict__ = {
+        "compileResult": CompileResult,
+        "judgeResult": JudgeResult,
+        "version": int
+    }
+    compileResult: CompileResult | None
+    judgeResult: JudgeResult | None
+    version: int
+
+class RecordDetails(Record):
+    __type_dict__ = {
+        **Record.__type_dict__,
+        "detail": RecordStatus,
+        "sourceCode": str
+    }
+    detail: "RecordStatus"
+    sourceCode: str | None
+
 class Post(PostSummary):
     __type_dict__ = {
         **PostSummary.__type_dict__,
@@ -1103,6 +1242,16 @@ class ArticleDataRequestResponse(Response):
     canReply: bool
     canEdit: bool
 
+class RecordRequestResponse(Response):
+    __type_dict__ = {
+        "record": RecordDetails,
+        # "testCaseGroup": List[List[int]] | Dict[int, List[int]],
+        "showStatus": bool
+    }
+    record: RecordDetails
+    # testCaseGroup: List[List[int]] | Dict[int, List[int]]
+    showStatus: bool
+
 class TagRequestResponse(Response):
     __type_dict__ = {
         "tags": [TagDetail],
@@ -1110,6 +1259,12 @@ class TagRequestResponse(Response):
     }
     tags: List[TagDetail]
     types: List[TagType]
+
+class SubmitCodeResponse(Response):
+    __type_dict__ = {
+        "rid" : int
+    }
+    rid: int
 
 class LuoguCookies(LuoguType):
     __type_dict__ = {

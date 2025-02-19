@@ -160,7 +160,7 @@ API Implementation Status
   - [ ] login
   - [ ] logout
   - [x] me
-  - [ ] submit_code
+  - [x] submit_code
   - [x] get_created_problem_list
   - [x] get_created_problemset_list
   - [x] get_created_content_list

@@ -1,3 +1,4 @@
+import re
 import json
 import time
 from typing import List, Literal
@@ -138,11 +139,19 @@ class luoguAPI:
 
         for attempt in range(self.max_retries):
             try:
-                response = self.client.get(self.base_url, headers=headers, cookies=self.cookies)
-
-                logger.debug(f"Response: {response.text}")
-
+                response = self.client.get(
+                    self.base_url + endpoint, 
+                    headers=headers, 
+                    cookies=self.cookies
+                )
+                
                 response.raise_for_status()
+
+                result = re.search(r"C3VK=(.*);", response.text)
+                if result:
+                    self.cookies["C3VK"] = result.group(1)
+                    logger.debug("C3VK token fetched successfully")
+                    continue
 
                 soup = bs4.BeautifulSoup(response.text, "html.parser")
                 csrf_meta = soup.select_one("meta[name='csrf-token']")
@@ -153,7 +162,6 @@ class luoguAPI:
                     return self.x_csrf_token
                 else:
                     logger.warning("CSRF token not found, retrying...")
-                    self.get_problem(pid="P1000") # refresh the session
                     time.sleep(1)
             except httpx.TimeoutException as e:
                 logger.warning(f"Attempt {attempt + 1}: Timeout error - {e}")
@@ -217,7 +225,7 @@ class luoguAPI:
 
         return ProblemDataRequestResponse(res)
 
-    def get_problem_settings(
+    def get_problem_settings_legacy(
             self, pid: str,
     ) -> ProblemSettingsRequestResponse:
         res = self._send_request(endpoint=f"problem/edit/{pid}")
@@ -233,6 +241,11 @@ class luoguAPI:
         res["testCaseSettings"]["showSubtask"] = res["showSubtask"]
 
         return ProblemSettingsRequestResponse(res)
+
+    def get_problem_settings(self, pid: str):
+        res = self._send_request(endpoint=f"problem/{pid}/edit")
+        
+        return res
 
     def update_problem_settings(
             self, pid: str,
@@ -482,6 +495,10 @@ class luoguAPI:
         res = self._send_request(endpoint=f"paste/{id}")
         return PasteRequestResponse(res)
 
+    def get_record(self, rid: str) -> RecordRequestResponse:
+        res = self._send_request(endpoint=f"record/{rid}")
+        return RecordRequestResponse(res)
+    
     def get_article(self, lid: str) -> ArticleDataRequestResponse:
         res = self._send_request(endpoint=f"article/{lid}")
         return ArticleDataRequestResponse(res)
@@ -511,6 +528,30 @@ class luoguAPI:
         res["contests"]["contests"] = res["contests"]["result"]
         return ContestListRequestResponse(res["contests"])
 
+    def submit_code(
+            self,
+            pid: str,
+            code: str,
+            contest_id: int | None = None,
+            lang: str | None = None,
+            enableO2: bool = True,
+    ) -> SubmitCodeResponse:
+        self._get_csrf(f"/problem/{pid}")
+        res = self._send_request(
+            endpoint=f"/fe/api/problem/submit/{pid}",
+            params=ProblemRequestParams(json={"contest_id": contest_id}),
+            method="POST",
+            data={
+                "code": code,
+                "lang": lang,
+                "enableO2": enableO2
+            }
+        )
+        return SubmitCodeResponse(res)
+    
+    def submit_code_via_openluogu():
+        raise NotImplementedError
+    
     def get_tags(self) -> TagRequestResponse:
         res = self._send_request(endpoint="/_lfe/tags")
         return TagRequestResponse(res)
