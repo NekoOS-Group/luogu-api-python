@@ -27,3 +27,7 @@ class ServerError(LuoguAPIError):
 class ForbiddenError(LuoguAPIError):
     """Exception raised when the user is forbidden to access the resource."""
     pass
+
+class NeedCaptcha(LuoguAPIError):
+    """Exception raised when the user need to solve a captcha."""
+    pass

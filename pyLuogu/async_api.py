@@ -1,7 +1,7 @@
 import re
 import json
 import asyncio
-from typing import List, Literal
+from typing import List, Literal, Callable
 
 import httpx
 import bs4
@@ -16,7 +16,7 @@ class asyncLuoguAPI:
             base_url="https://www.luogu.com.cn",
             cookies: LuoguCookies = None,
             timeout: float | httpx.Timeout | None = 10,
-            max_retries: int = 5
+            max_retries: int = 5,
     ):
         self.base_url = base_url
         self.cookies = None if cookies is None else cookies.to_json()
@@ -66,7 +66,6 @@ class asyncLuoguAPI:
 
             try:
                 response.raise_for_status()
-                logger.debug(response.text)
                 
                 new_C3VK = await self._get_C3VK(response)
                 if new_C3VK is not None:
@@ -104,7 +103,25 @@ class asyncLuoguAPI:
                 if response.status_code == 401:
                     raise AuthenticationError("Authentication failed") from e
                 elif response.status_code == 403:
-                    raise ForbiddenError("403 Forbidden") from e
+                    res_json = response.json()
+                    message = res_json.get("errorMessage")
+                    logger.warning(f"HTTP 403: {message}")
+                    if message is None:
+                        raise ForbiddenError(f"Forbidden: {e}") from e
+                    if message == "提交过于频繁，请过3分钟再尝试":
+                        await asyncio.sleep(180)
+                        continue
+                    if message == "请求频繁，请稍候再试":
+                        await asyncio.sleep(5)
+                        continue
+                    if message == "验证码错误":
+                        raise NeedCaptcha("Need captcha") from e
+                        continue
+                    if message == "user.not_self":
+                        raise AuthenticationError("not yourself")
+                    logger.warning("CSRF token expired, refreshing token...")
+                    self._get_csrf()
+                    continue  # Retry the request
                 elif response.status_code == 404:
                     raise NotFoundError("Resource not found") from e
                 elif response.status_code == 429:
@@ -180,11 +197,40 @@ class asyncLuoguAPI:
                 await asyncio.sleep(1)
             except httpx.HTTPError as e:
                 logger.error(f"HTTP error: {e}")
-                raise RequestError("HTTP error") from e
+                raise RequestError(f"HTTP error: {e}")
 
         logger.error(f"Failed to fetch CSRF token after {self.max_retries} attempts")
         raise RequestError(f"Failed to fetch CSRF token after {self.max_retries} attempts")
 
+    async def _get_captcha(self):
+        headers = {
+            "User-Agent": "luogu_bot",
+            "x-csrf-token": self.x_csrf_token
+        }
+        for attempt in range(self.max_retries):
+            try:
+                logger.info(f"({attempt}/{self.max_retries}) Async GET captcha from {self.base_url + '/api/verify/captcha'}")
+                response = await self.client.get(
+                    self.base_url + "/api/verify/captcha", 
+                    headers=headers, 
+                    cookies=self.cookies
+                )
+
+                response.raise_for_status()
+
+                return response.content
+            except httpx.TimeoutException as e:
+                logger.warning(f"Attempt {attempt + 1}: Timeout error - {e}")
+                await asyncio.sleep(1)
+            except httpx.HTTPError as e:
+                logger.error(f"HTTP error: {e}")
+                raise RequestError("HTTP error") from e
+        
+        raise RequestError(f"Failed to fetch captcha after {self.max_retries} attempts")
+
+    def _post_captcha(self, captcha: str):
+        raise NotImplementedError
+    
     async def login(
             self, user_name: str, password: str,
             captcha: Literal["input", "ocr"],
@@ -458,19 +504,34 @@ class asyncLuoguAPI:
             contest_id: int | None = None,
             lang: str | None = None,
             enableO2: bool = True,
+            capture_handler: Callable[[bytes], str] | None = None
     ) -> SubmitCodeResponse:
-        await self._get_csrf(f"/problem/{pid}")
-        res = await self._send_request(
-            endpoint=f"/fe/api/problem/submit/{pid}",
-            params=ProblemRequestParams(json={"contest_id": contest_id}),
-            method="POST",
-            data={
-                "code": code,
-                "lang": lang,
-                "enableO2": enableO2
-            }
-        )
-        return SubmitCodeResponse(res)
+        captcha_text = ""
+        for attempt in range(self.max_retries):
+            try:
+                await self._get_csrf(f"/problem/{pid}")
+                res = await self._send_request(
+                    endpoint=f"/fe/api/problem/submit/{pid}",
+                    params=ProblemRequestParams(json={"contest_id": contest_id}),
+                    method="POST",
+                    data={
+                        "code": code,
+                        "lang": lang,
+                        "enableO2": enableO2,
+                        "captcha": captcha_text
+                    }
+                )
+                return SubmitCodeResponse(res)
+            except NeedCaptcha as e:
+                if capture_handler is None:
+                    raise NeedCaptcha("Need captcha")
+                logger.warning(f"({attempt}/{self.max_retries}) Raise User-defined captcha handler")
+                captcha = await self._get_captcha()
+                logger.debug(f"Captcha: {captcha}")
+                captcha_text = capture_handler(captcha)
+                await asyncio.sleep(5)
+                continue
+        raise RequestError("Failed to submit code after multiple attempts")
     
     async def submit_code_via_openluogu():
         raise NotImplementedError

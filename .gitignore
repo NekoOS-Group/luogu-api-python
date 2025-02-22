@@ -130,7 +130,8 @@ dmypy.json
 
 *cookies*.json
 *_key
-*cache/
+.cache/
+.temp/
 .idea
 .vscode
 

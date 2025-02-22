@@ -1,7 +1,7 @@
 import re
 import json
 import time
-from typing import List, Literal
+from typing import List, Literal, Callable
 
 import httpx
 import bs4
@@ -16,7 +16,7 @@ class luoguAPI:
             base_url="https://www.luogu.com.cn",
             cookies: LuoguCookies = None,
             timeout: float | httpx.Timeout | None = 10,
-            max_retries: int = 5
+            max_retries: int = 5,
     ):
         self.base_url = base_url
         self.cookies = None if cookies is None else cookies.to_json()
@@ -27,14 +27,13 @@ class luoguAPI:
             follow_redirects=True,
         )
         self.x_csrf_token = None
-        self.x_csrf_token = None
 
     def _send_request(
             self,
             endpoint: str,
             method: str = "GET",
             params: RequestParams | None = None,
-            data: dict | None = None
+            data: dict | None = None,
     ):
         url = f"{self.base_url}/{endpoint}"
         headers = self._get_headers(method)
@@ -94,15 +93,21 @@ class luoguAPI:
                 if response.status_code == 401:
                     raise AuthenticationError("Authentication failed") from e
                 elif response.status_code == 403:
-                    print(res_json.get("errorMessage"))
-                    if res_json.get("请求频繁，请稍候再试"):
+                    res_json = response.json()
+                    message = res_json.get("errorMessage")
+                    logger.warning(f"HTTP 403: {message}")
+                    if message is None:
+                        raise ForbiddenError(f"Forbidden: {e}") from e
+                    if message == "请求频繁，请稍候再试":
                         time.sleep(5)
                         continue
-                    if res_json.get("errorMessage") == "user.not_self":
+                    if message == "验证码错误":
+                        raise NeedCaptcha("Need captcha") from e
+                        continue
+                    if message == "user.not_self":
                         raise AuthenticationError("not yourself")
                     logger.warning("CSRF token expired, refreshing token...")
                     self._get_csrf()
-                    headers = self._get_headers(method)  # Refresh headers with new CSRF token
                     continue  # Retry the request
                 elif response.status_code == 404:
                     raise NotFoundError("Resource not found") from e
@@ -173,6 +178,32 @@ class luoguAPI:
         logger.error("Failed to fetch CSRF token after 5 attempts")
         raise RequestError("Failed to fetch CSRF token after 5 attempts")
 
+    def _get_captcha(self):
+        headers = {
+            "User-Agent": "luogu_bot",
+            "x-csrf-token": self.x_csrf_token
+        }
+        for attempt in range(self.max_retries):
+            try:
+                response = self.client.get(
+                    self.base_url + "/api/verify/captcha", 
+                    headers=headers, 
+                    cookies=self.cookies
+                )
+
+                response.raise_for_status()
+
+                return response.content
+            except httpx.TimeoutException as e:
+                logger.warning(f"Attempt {attempt + 1}: Timeout error - {e}")
+                time.sleep(1)
+            except httpx.HTTPError as e:
+                logger.error(f"HTTP error: {e}")
+                raise RequestError("HTTP error") from e
+
+    def _post_captcha(self, captcha: str):
+        raise NotImplementedError
+    
     def login(
             self, user_name: str, password: str,
             captcha: Literal["input", "ocr"],
@@ -535,20 +566,30 @@ class luoguAPI:
             contest_id: int | None = None,
             lang: str | None = None,
             enableO2: bool = True,
+            capture_handler: Callable[[bytes], str] | None = None
     ) -> SubmitCodeResponse:
-        self._get_csrf(f"/problem/{pid}")
-        res = self._send_request(
-            endpoint=f"/fe/api/problem/submit/{pid}",
-            params=ProblemRequestParams(json={"contest_id": contest_id}),
-            method="POST",
-            data={
-                "code": code,
-                "lang": lang,
-                "enableO2": enableO2
-            }
-        )
-        return SubmitCodeResponse(res)
-    
+        captcha_text = ""
+        for attempt in range(self.max_retries):
+            try:
+                self._get_csrf(f"/problem/{pid}")
+                res = self._send_request(
+                    endpoint=f"/fe/api/problem/submit/{pid}",
+                    params=ProblemRequestParams(json={"contest_id": contest_id}),
+                    method="POST",
+                    data={
+                        "code": code,
+                        "lang": lang,
+                        "enableO2": enableO2,
+                        "captcha": captcha_text
+                    }
+                )
+                return SubmitCodeResponse(res)
+            except NeedCaptcha:
+                if capture_handler is None:
+                    raise NeedCaptcha("Need captcha")
+                captcha = self._get_captcha()
+                captcha_text = capture_handler(captcha)
+            
     def submit_code_via_openluogu():
         raise NotImplementedError
     
