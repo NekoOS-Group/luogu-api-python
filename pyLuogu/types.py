@@ -95,6 +95,8 @@ ProblemSetType = Literal["official", "select"]
 TransferProblemType = Literal["P", "U", "B"] | int
 
 class LuoguType(JsonSerializable, Printable):
+    """Inherit from 
+    """
     __type_dict__ = {}
 
     def __init__(self,json=None):
@@ -119,15 +121,27 @@ class PagedList(LuoguType, Generic[T_of_list]):
     perPage: int
 
 class ListRequestParams(RequestParams):
+    """Common Parameters for Requests about list """
     __type_dict__ = {
         "page": int,
         "orderBy": int
     }
 
 class ProblemListRequestParams(ListRequestParams):
+    """Parameters for requesting a list of problems. Use for GET /problem/list;
+
+    Attributes:
+        page (int): The page number to retrieve.
+        orderBy (int): The order in which to sort the problems.
+        keyword (str): A keyword to filter the problems.
+        content (bool): When 
+        type (ProblemType): The type of problem.
+        difficulty (int): The difficulty level of the problems.
+        tag (str): A tag to filter the problems.
+    """
     __type_dict__ = {
         "page": int,
-        "orderBy": int,
+        "orderBy": Literal["","name","pid","difficulty"],
         "keyword": str,
         "content": bool,
         "type": str,

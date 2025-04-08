@@ -11,6 +11,8 @@ from .errors import *
 from . import logger
 
 class asyncLuoguAPI:
+    """ 
+    """
     def __init__(
             self,
             base_url="https://www.luogu.com.cn",
